@@ -473,120 +473,78 @@ st.markdown(
 )
 
 # --- BACKGROUND CALENDAR (LARGE, CENTERED-RIGHT, SKELETON STYLE) ---
+import streamlit as st
+from datetime import datetime
+import streamlit.components.v1 as components
+
 def make_background_calendar():
-    # Get today's date to start the calendar
     today = datetime.now()
-    start_date = today.replace(day=1)  # Start from first day of current month
+    start_date = today.replace(day=1)
     current_day = today.day
-    
-    # Calculate how many days in current month
-    if today.month == 12:
-        next_month = today.replace(year=today.year + 1, month=1, day=1)
-    else:
-        next_month = today.replace(month=today.month + 1, day=1)
+
+    next_month = today.replace(year=today.year + 1, month=1, day=1) if today.month == 12 else today.replace(month=today.month + 1, day=1)
     days_in_month = (next_month - start_date).days
-    
-    # Find what day of week the month starts on (0=Monday, 6=Sunday)
+
     first_day_weekday = start_date.weekday()
-    # Convert to Sunday=0 format for calendar display
     first_day_offset = (first_day_weekday + 1) % 7
-    
-    # Color scheme based on theme
-    if st.session_state.dark_mode:
-        calendar_color = "#ffffff"
-        calendar_opacity = "0.40"
-        text_opacity = "0.45"
-        current_day_opacity = "0.65"
-    else:
-        calendar_color = "#333333"
-        calendar_opacity = "0.40"
-        text_opacity = "0.50"
-        current_day_opacity = "0.70"
-    
-    # Calendar dimensions - larger and more prominent
-    cal_width = 420
-    cal_height = 320
-    cell_size = 50
-    start_x = 40
-    start_y = 80
-    
-    # Build calendar grid
+
+    calendar_color, calendar_opacity, text_opacity, current_day_opacity = (
+        ("#ffffff", "0.40", "0.45", "0.65") if st.session_state.dark_mode else ("#333333", "0.40", "0.50", "0.70")
+    )
+
+    cal_width, cal_height, cell_size, start_x, start_y = 420, 320, 50, 40, 80
+
     calendar_elements = []
-    
-    # Weekday headers with casual font
+
     weekdays = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT']
     for col, day_name in enumerate(weekdays):
         x = start_x + col * cell_size + 25
         y = start_y - 20
         calendar_elements.append(
-            f'<text x="{x}" y="{y}" text-anchor="middle" font-family="Inter, -apple-system, BlinkMacSystemFont, sans-serif" '
-            f'font-size="13" font-weight="400" fill="{calendar_color}" fill-opacity="{text_opacity}">{day_name}</text>'
+            f'<text x="{x}" y="{y}" text-anchor="middle" font-family="Inter, sans-serif" font-size="13" font-weight="400" fill="{calendar_color}" fill-opacity="{text_opacity}">{day_name}</text>'
         )
-    
-    # Calendar days - skeleton style with rounded corners
+
     day_counter = 1
-    for row in range(6):  # 6 rows to accommodate all possible month layouts
-        for col in range(7):  # 7 days per week
-            x = start_x + col * cell_size
-            y = start_y + row * cell_size
-            
-            # Skip cells before month starts
-            if row == 0 and col < first_day_offset:
+    for row in range(6):
+        for col in range(7):
+            x, y = start_x + col * cell_size, start_y + row * cell_size
+
+            if row == 0 and col < first_day_offset or day_counter > days_in_month:
                 continue
-            
-            # Stop after month ends
-            if day_counter > days_in_month:
-                break
-            
-            # Determine if this is today
+
             is_today = day_counter == current_day
             opacity = current_day_opacity if is_today else calendar_opacity
             stroke_width = "2.5" if is_today else "1.5"
-            
-            # Hollow square with rounded corners
+
             calendar_elements.append(
-                f'<rect x="{x}" y="{y}" width="{cell_size-8}" height="{cell_size-8}" '
-                f'rx="8" ry="8" fill="none" stroke="{calendar_color}" '
-                f'stroke-opacity="{opacity}" stroke-width="{stroke_width}"/>'
+                f'<rect x="{x}" y="{y}" width="{cell_size-8}" height="{cell_size-8}" rx="8" ry="8" fill="none" stroke="{calendar_color}" stroke-opacity="{opacity}" stroke-width="{stroke_width}"/>'
             )
-            
-            # Day number with casual, friendly font
+
             text_x = x + (cell_size-8) // 2
             text_y = y + (cell_size-8) // 2 + 5
             font_weight = "600" if is_today else "400"
             calendar_elements.append(
-                f'<text x="{text_x}" y="{text_y}" text-anchor="middle" '
-                f'font-family="Inter, -apple-system, BlinkMacSystemFont, sans-serif" '
-                f'font-size="16" font-weight="{font_weight}" fill="{calendar_color}" '
-                f'fill-opacity="{opacity}">{day_counter}</text>'
+                f'<text x="{text_x}" y="{text_y}" text-anchor="middle" font-family="Inter, sans-serif" font-size="16" font-weight="{font_weight}" fill="{calendar_color}" fill-opacity="{opacity}">{day_counter}</text>'
             )
-            
+
             day_counter += 1
-    
-    # Create the complete SVG
+
     svg = f'''
-    <svg width="{cal_width}" height="{cal_height}" viewBox="0 0 {cal_width} {cal_height}" 
-         fill="none" xmlns="http://www.w3.org/2000/svg">
+    <svg width="{cal_width}" height="{cal_height}" viewBox="0 0 {cal_width} {cal_height}" fill="none" xmlns="http://www.w3.org/2000/svg">
         {''.join(calendar_elements)}
     </svg>
     '''
     return svg
 
-# Display the enhanced calendar with better positioning
-st.markdown(f'''
-<div class="calendar-bg" style="
-    position: fixed;
-    top: 50%;
-    right: 8%;
-    transform: translateY(-50%);
-    z-index: 1;
-    opacity: 0.85;
-    pointer-events: none;
-    transition: all 0.3s ease;
-">
-{make_background_calendar()}
+svg_calendar = make_background_calendar()
+
+# Correct SVG embedding using Streamlit's HTML component
+components.html(f'''
+<div style="position: fixed; top: 50%; right: 8%; transform: translateY(-50%); z-index: 1; opacity: 0.85; pointer-events: none; transition: all 0.3s ease;">
+    {svg_calendar}
 </div>
-''', unsafe_allow_html=True)
+''', height=cal_height+100)
+
 
 # --- SIDEBAR WITH PROPERLY INDENTED INTERVIEW SCHEDULING ---
 with st.sidebar:
