@@ -534,16 +534,16 @@ def make_background_calendar():
         {''.join(calendar_elements)}
     </svg>
     '''
-    return svg
+    return svg, cal_height
 
 svg_calendar = make_background_calendar()
 
 # Correct SVG embedding using Streamlit's HTML component
 components.html(f'''
 <div style="position: fixed; top: 50%; right: 8%; transform: translateY(-50%); z-index: 1; opacity: 0.85; pointer-events: none; transition: all 0.3s ease;">
-    {svg_calendar}
+    {svg_calendar}  <!-- <<<<<< AHORA USAS svg_calendar -->
 </div>
-''', height=cal_height+100)
+''', height=cal_height + 100)
 
 
 # --- SIDEBAR WITH PROPERLY INDENTED INTERVIEW SCHEDULING ---
