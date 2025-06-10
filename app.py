@@ -452,7 +452,7 @@ st.markdown(
 
 # --- MINIMALISTIC TITLE ---
 st.markdown(
-    f"<h2 style='font-family:Roboto,sans-serif;font-weight:300;margin-bottom:8px;margin-top:8px;color:{text};text-align:center;'>CV Assistant</h2>",
+    f"<h2 style='font-family:Roboto,sans-serif;font-weight:300;margin-bottom:8px;margin-top:8px;color:{text};text-align:center;'>hola,welcome</h2>",
     unsafe_allow_html=True,
 )
 
@@ -471,80 +471,6 @@ st.markdown(
     f'<div class="engine-icon" style="width:38px;height:38px;" title="hola, welcome">{engine_svg}</div>',
     unsafe_allow_html=True
 )
-
-# --- BACKGROUND CALENDAR (LARGE, CENTERED-RIGHT, SKELETON STYLE) ---
-import streamlit as st
-from datetime import datetime
-import streamlit.components.v1 as components
-
-def make_background_calendar():
-    today = datetime.now()
-    start_date = today.replace(day=1)
-    current_day = today.day
-
-    next_month = today.replace(year=today.year + 1, month=1, day=1) if today.month == 12 else today.replace(month=today.month + 1, day=1)
-    days_in_month = (next_month - start_date).days
-
-    first_day_weekday = start_date.weekday()
-    first_day_offset = (first_day_weekday + 1) % 7
-
-    calendar_color, calendar_opacity, text_opacity, current_day_opacity = (
-        ("#ffffff", "0.40", "0.45", "0.65") if st.session_state.dark_mode else ("#333333", "0.40", "0.50", "0.70")
-    )
-
-    cal_width, cal_height, cell_size, start_x, start_y = 420, 320, 50, 40, 80
-
-    calendar_elements = []
-
-    weekdays = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT']
-    for col, day_name in enumerate(weekdays):
-        x = start_x + col * cell_size + 25
-        y = start_y - 20
-        calendar_elements.append(
-            f'<text x="{x}" y="{y}" text-anchor="middle" font-family="Inter, sans-serif" font-size="13" font-weight="400" fill="{calendar_color}" fill-opacity="{text_opacity}">{day_name}</text>'
-        )
-
-    day_counter = 1
-    for row in range(6):
-        for col in range(7):
-            x, y = start_x + col * cell_size, start_y + row * cell_size
-
-            if row == 0 and col < first_day_offset or day_counter > days_in_month:
-                continue
-
-            is_today = day_counter == current_day
-            opacity = current_day_opacity if is_today else calendar_opacity
-            stroke_width = "2.5" if is_today else "1.5"
-
-            calendar_elements.append(
-                f'<rect x="{x}" y="{y}" width="{cell_size-8}" height="{cell_size-8}" rx="8" ry="8" fill="none" stroke="{calendar_color}" stroke-opacity="{opacity}" stroke-width="{stroke_width}"/>'
-            )
-
-            text_x = x + (cell_size-8) // 2
-            text_y = y + (cell_size-8) // 2 + 5
-            font_weight = "600" if is_today else "400"
-            calendar_elements.append(
-                f'<text x="{text_x}" y="{text_y}" text-anchor="middle" font-family="Inter, sans-serif" font-size="16" font-weight="{font_weight}" fill="{calendar_color}" fill-opacity="{opacity}">{day_counter}</text>'
-            )
-
-            day_counter += 1
-
-    svg = f'''
-    <svg width="{cal_width}" height="{cal_height}" viewBox="0 0 {cal_width} {cal_height}" fill="none" xmlns="http://www.w3.org/2000/svg">
-        {''.join(calendar_elements)}
-    </svg>
-    '''
-    return svg, cal_height
-
-svg_calendar = make_background_calendar()
-
-# Correct SVG embedding using Streamlit's HTML component
-components.html(f'''
-<div style="position: fixed; top: 50%; right: 8%; transform: translateY(-50%); z-index: 1; opacity: 0.85; pointer-events: none; transition: all 0.3s ease;">
-    {svg_calendar}  <!-- <<<<<< AHORA USAS svg_calendar -->
-</div>
-''', height=cal_height + 100)
-
 
 # --- SIDEBAR WITH PROPERLY INDENTED INTERVIEW SCHEDULING ---
 with st.sidebar:
