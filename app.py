@@ -582,34 +582,32 @@ with st.sidebar:
             st.session_state.scheduling_step = 0
             st.rerun()
 
-# --- ENHANCED STREAMING FUNCTION ---
-def stream_message(msg, role="assistant", delay=0.016):
-    """Enhanced streaming with better error handling"""
-    try:
-        with st.chat_message(role):
-            output = st.empty()
-            txt = ""
-            for char in msg:
-                txt += char
-                output.markdown(txt)
-                time.sleep(delay)
-            return txt
-    except Exception as e:
-        st.error(f"Error displaying message: {e}")
-        return msg
+def stream_message(msg, delay=0.016):
+    output = st.empty()
+    txt = ""
+    for char in msg:
+        txt += char
+        output.markdown(txt)
+        time.sleep(delay)
+    return txt
 
-# --- GREETING & CHAT HISTORY ---
-# Handle initial greeting (only once)
+# --- Uso correcto fuera de la función ---
 if not st.session_state.greeting_streamed:
-    greeting = "Hi there! I'm Aldo*—or at least, my digital twin. Go ahead and ask me anything about my professional life, projects, or skills. I promise not to humblebrag too much (okay, maybe just a little)."
-    streamed_greeting = stream_message(greeting, role="assistant")
+    greeting = ("Hi there! I'm Aldo*—or at least, my digital twin. "
+                "Go ahead and ask me anything about my professional life, projects, or skills. "
+                "I promise not to humblebrag too much (okay, maybe just a little).")
+    
+    with st.chat_message("assistant"):  # Aquí se usa claramente afuera
+        streamed_greeting = stream_message(greeting)
+    
     st.session_state.messages.append({"role": "assistant", "content": streamed_greeting})
     st.session_state.greeting_streamed = True
 else:
-    # Show message history
+    # Mostrar historial
     for message in st.session_state.messages:
         with st.chat_message(message["role"]):
             st.markdown(message["content"])
+
 
 # --- BACKEND-INTEGRATED CHAT INPUT ---
 if prompt := st.chat_input("Ask! Don't be shy !", key="main_chat_input"):
