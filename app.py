@@ -468,7 +468,7 @@ engine_svg = '''
 
 # Place engine icon at top-left
 st.markdown(
-    f'<div class="engine-icon" style="width:38px;height:38px;" title="CV Assistant Engine">{engine_svg}</div>',
+    f'<div class="engine-icon" style="width:38px;height:38px;" title="hola, welcome">{engine_svg}</div>',
     unsafe_allow_html=True
 )
 
