@@ -1,6 +1,6 @@
 """
-API Client for CV-AI Backend Integration
-Centralized backend communication and response handling
+API Client for CV-AI Backend Integration v2.0
+Enhanced with endpoint discovery and robust error handling
 """
 
 import httpx
@@ -51,12 +51,12 @@ class APIResponse:
     request_id: Optional[str] = None
 
 class CVBackendClient:
-    """Enhanced CV Backend Client for Railway Integration"""
+    """Enhanced CV Backend Client with Endpoint Discovery"""
     
     def __init__(self, base_url: str = "https://cvbrain-production.up.railway.app"):
         self.base_url = base_url
-        self.timeout = 60.0
-        self.max_retries = 3
+        self.timeout = 30.0  # Reduced timeout for faster debugging
+        self.max_retries = 2  # Reduced retries for faster feedback
         self.retry_delay = 1.0
         
         # Circuit breaker state
@@ -65,7 +65,64 @@ class CVBackendClient:
         self.circuit_open = False
         self.circuit_timeout = 60
         
-        logger.info(f"CV Backend Client initialized for {self.base_url}")
+        # Endpoint discovery
+        self.query_endpoint = None
+        self._endpoint_discovered = False
+        
+        logger.info(f"CV Backend Client v2.0 initialized for {self.base_url}")
+    
+    async def _discover_endpoints(self) -> Optional[str]:
+        """Discover the correct query endpoint"""
+        if self._endpoint_discovered and self.query_endpoint:
+            return self.query_endpoint
+        
+        # Possible endpoint patterns to try
+        possible_endpoints = [
+            "/v1/query",           # Original attempt
+            "/query",              # Simple path
+            "/api/query",          # API prefix
+            "/api/v1/query",       # API with version
+            "/cv/query",           # CV specific
+            "/chat",               # Chat endpoint
+            "/ask",                # Ask endpoint
+        ]
+        
+        logger.info("🔍 Discovering available endpoints...")
+        
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            for endpoint in possible_endpoints:
+                try:
+                    # Test with a simple HEAD request first
+                    test_url = f"{self.base_url}{endpoint}"
+                    response = await client.head(test_url)
+                    
+                    if response.status_code in [200, 405]:  # 405 = Method Not Allowed (but endpoint exists)
+                        logger.info(f"✅ Found endpoint: {endpoint}")
+                        self.query_endpoint = endpoint
+                        self._endpoint_discovered = True
+                        return endpoint
+                        
+                except httpx.HTTPStatusError as e:
+                    if e.response.status_code == 405:  # Method not allowed means endpoint exists
+                        logger.info(f"✅ Found endpoint (POST only): {endpoint}")
+                        self.query_endpoint = endpoint
+                        self._endpoint_discovered = True
+                        return endpoint
+                except:
+                    continue
+        
+        # If no endpoint found, check API documentation
+        try:
+            docs_response = await client.get(f"{self.base_url}/docs")
+            if docs_response.status_code == 200:
+                logger.warning("📚 API docs available at /docs - check manually for endpoints")
+        except:
+            pass
+        
+        # Default fallback
+        logger.warning("❌ No query endpoint discovered, using default /v1/query")
+        self.query_endpoint = "/v1/query"
+        return self.query_endpoint
     
     def _classify_query(self, message: str) -> QueryType:
         """Intelligently classify user query"""
@@ -148,18 +205,40 @@ class CVBackendClient:
         response_format: ResponseFormat,
         query_type: QueryType
     ) -> APIResponse:
-        """Make async request to backend"""
+        """Make async request to backend with endpoint discovery"""
         
-        request_payload = {
-            "question": message,
-            "k": 3,
-            "query_type": query_type.value,
-            "response_format": response_format.value,
-            "include_sources": True,
-            "include_confidence_explanation": False,
-            "language": "en",
-            "max_response_length": 800
-        }
+        # Discover endpoint if not already done
+        endpoint = await self._discover_endpoints()
+        query_url = f"{self.base_url}{endpoint}"
+        
+        # Try multiple payload formats
+        payload_formats = [
+            # Format 1: Full structured payload
+            {
+                "question": message,
+                "k": 3,
+                "query_type": query_type.value,
+                "response_format": response_format.value,
+                "include_sources": True,
+                "include_confidence_explanation": False,
+                "language": "en",
+                "max_response_length": 800
+            },
+            # Format 2: Simplified payload
+            {
+                "question": message,
+                "k": 3
+            },
+            # Format 3: Just the question
+            {
+                "question": message
+            },
+            # Format 4: Different field names
+            {
+                "query": message,
+                "num_results": 3
+            }
+        ]
         
         start_time = time.time()
         
@@ -173,87 +252,111 @@ class CVBackendClient:
             http2=True
         ) as client:
             
-            try:
-                logger.info(f"Making request to {self.base_url}/v1/query")
-                
-                response = await client.post(
-                    f"{self.base_url}/v1/query",
-                    json=request_payload,
-                    headers={
-                        "Content-Type": "application/json",
-                        "Accept": "application/json"
-                    }
-                )
-                
-                processing_time = time.time() - start_time
-                
-                if response.status_code == 200:
-                    self._record_success()
-                    response_data = response.json()
+            for i, request_payload in enumerate(payload_formats):
+                try:
+                    logger.info(f"🔄 Attempt {i+1}: Making request to {query_url}")
+                    logger.debug(f"📤 Payload: {request_payload}")
                     
-                    return APIResponse(
-                        success=True,
-                        content=response_data.get("answer", "No response received"),
-                        metadata={
-                            "confidence_level": response_data.get("confidence_level"),
-                            "query_type": response_data.get("query_type"),
-                            "relevant_chunks": response_data.get("relevant_chunks"),
-                            "model_used": response_data.get("model_used"),
-                            "request_id": response_data.get("request_id"),
-                        },
-                        processing_time=processing_time,
-                        confidence_score=response_data.get("confidence_score"),
-                        sources_count=response_data.get("relevant_chunks", 0),
-                        request_id=response_data.get("request_id")
+                    response = await client.post(
+                        query_url,
+                        json=request_payload,
+                        headers={
+                            "Content-Type": "application/json",
+                            "Accept": "application/json",
+                            "User-Agent": "CV-Assistant-Frontend/2.0"
+                        }
                     )
+                    
+                    processing_time = time.time() - start_time
+                    logger.info(f"📥 Response status: {response.status_code}")
+                    
+                    if response.status_code == 200:
+                        self._record_success()
+                        response_data = response.json()
+                        logger.info(f"✅ Successful response with payload format {i+1}")
+                        
+                        # Handle different response formats
+                        content = (
+                            response_data.get("answer") or 
+                            response_data.get("response") or 
+                            response_data.get("result") or
+                            str(response_data)
+                        )
+                        
+                        return APIResponse(
+                            success=True,
+                            content=content,
+                            metadata={
+                                "confidence_level": response_data.get("confidence_level"),
+                                "query_type": response_data.get("query_type"),
+                                "relevant_chunks": response_data.get("relevant_chunks"),
+                                "model_used": response_data.get("model_used"),
+                                "request_id": response_data.get("request_id"),
+                                "endpoint_used": endpoint,
+                                "payload_format": i+1
+                            },
+                            processing_time=processing_time,
+                            confidence_score=response_data.get("confidence_score"),
+                            sources_count=response_data.get("relevant_chunks", 0),
+                            request_id=response_data.get("request_id")
+                        )
+                    
+                    elif response.status_code == 422:
+                        # Validation error - try next payload format
+                        error_detail = response.text
+                        logger.warning(f"⚠️  Validation error with format {i+1}: {error_detail}")
+                        continue
+                    
+                    else:
+                        # Other HTTP error
+                        error_msg = f"HTTP {response.status_code}: {response.text}"
+                        logger.error(f"❌ HTTP error: {error_msg}")
+                        
+                        # Don't try other formats for non-validation errors
+                        self._record_failure()
+                        return APIResponse(
+                            success=False,
+                            content="",
+                            error=error_msg,
+                            processing_time=processing_time
+                        )
                 
-                else:
+                except httpx.TimeoutException:
                     self._record_failure()
-                    error_msg = f"API error {response.status_code}: {response.text}"
+                    error_msg = f"Request timeout after {self.timeout}s"
                     logger.error(error_msg)
                     
                     return APIResponse(
                         success=False,
                         content="",
                         error=error_msg,
-                        processing_time=processing_time
+                        processing_time=time.time() - start_time
                     )
-            
-            except httpx.TimeoutException:
-                self._record_failure()
-                error_msg = f"Request timeout after {self.timeout}s"
-                logger.error(error_msg)
                 
-                return APIResponse(
-                    success=False,
-                    content="",
-                    error=error_msg,
-                    processing_time=time.time() - start_time
-                )
-            
-            except httpx.ConnectError:
-                self._record_failure()
-                error_msg = "Cannot connect to CV backend service"
-                logger.error(error_msg)
+                except httpx.ConnectError:
+                    self._record_failure()
+                    error_msg = "Cannot connect to CV backend service"
+                    logger.error(error_msg)
+                    
+                    return APIResponse(
+                        success=False,
+                        content="",
+                        error=error_msg,
+                        processing_time=time.time() - start_time
+                    )
                 
-                return APIResponse(
-                    success=False,
-                    content="",
-                    error=error_msg,
-                    processing_time=time.time() - start_time
-                )
+                except Exception as e:
+                    logger.error(f"❌ Unexpected error with format {i+1}: {str(e)}")
+                    continue
             
-            except Exception as e:
-                self._record_failure()
-                error_msg = f"Unexpected error: {str(e)}"
-                logger.error(error_msg)
-                
-                return APIResponse(
-                    success=False,
-                    content="",
-                    error=error_msg,
-                    processing_time=time.time() - start_time
-                )
+            # If all payload formats failed
+            self._record_failure()
+            return APIResponse(
+                success=False,
+                content="",
+                error="All payload formats failed - API might expect different structure",
+                processing_time=time.time() - start_time
+            )
     
     def query_cv(self, message: str, response_format: str = "Detailed") -> APIResponse:
         """Main method to query the CV backend"""
@@ -270,24 +373,33 @@ class CVBackendClient:
         backend_format = self._map_response_format(response_format)
         query_type = self._classify_query(message)
         
-        # Retry logic
+        # Retry logic with fewer attempts for faster feedback
         for attempt in range(self.max_retries):
             try:
+                logger.info(f"🚀 Query attempt {attempt + 1}/{self.max_retries}")
                 response = asyncio.run(
                     self._make_request_async(message, backend_format, query_type)
                 )
                 
                 if response.success:
+                    logger.info("✅ Query successful!")
                     return response
                 
+                # Log the specific error for debugging
+                logger.warning(f"⚠️  Attempt {attempt + 1} failed: {response.error}")
+                
                 if attempt < self.max_retries - 1:
-                    time.sleep(self.retry_delay * (2 ** attempt))
+                    wait_time = self.retry_delay * (2 ** attempt)
+                    logger.info(f"⏳ Waiting {wait_time}s before retry...")
+                    time.sleep(wait_time)
             
             except Exception as e:
-                logger.error(f"Attempt {attempt + 1} failed: {e}")
+                logger.error(f"❌ Attempt {attempt + 1} failed with exception: {e}")
                 if attempt < self.max_retries - 1:
                     time.sleep(self.retry_delay * (2 ** attempt))
         
+        # Final failure
+        logger.error("❌ All attempts failed")
         return APIResponse(
             success=False,
             content="",
@@ -310,7 +422,9 @@ class CVBackendClient:
             return {
                 "status": "healthy" if response else "unhealthy",
                 "circuit_open": self.circuit_open,
-                "failure_count": self.failure_count
+                "failure_count": self.failure_count,
+                "endpoint_discovered": self._endpoint_discovered,
+                "query_endpoint": self.query_endpoint
             }
         except Exception as e:
             return {
@@ -319,3 +433,45 @@ class CVBackendClient:
                 "circuit_open": self.circuit_open,
                 "failure_count": self.failure_count
             }
+    
+    async def debug_backend(self) -> Dict[str, Any]:
+        """Debug backend endpoints and structure"""
+        debug_info = {
+            "base_url": self.base_url,
+            "health_check": False,
+            "available_endpoints": [],
+            "api_docs": None,
+            "discovered_endpoint": None
+        }
+        
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            # Test health
+            try:
+                health_response = await client.get(f"{self.base_url}/health")
+                debug_info["health_check"] = health_response.status_code == 200
+            except:
+                pass
+            
+            # Test common endpoints
+            test_endpoints = ["/", "/docs", "/redoc", "/openapi.json", "/v1/query", "/query", "/api/query"]
+            for endpoint in test_endpoints:
+                try:
+                    response = await client.head(f"{self.base_url}{endpoint}")
+                    if response.status_code < 400:
+                        debug_info["available_endpoints"].append(endpoint)
+                except:
+                    pass
+            
+            # Check for API docs
+            try:
+                docs_response = await client.get(f"{self.base_url}/docs")
+                if docs_response.status_code == 200:
+                    debug_info["api_docs"] = f"{self.base_url}/docs"
+            except:
+                pass
+            
+            # Discover query endpoint
+            discovered = await self._discover_endpoints()
+            debug_info["discovered_endpoint"] = discovered
+        
+        return debug_info
