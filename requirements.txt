@@ -7,11 +7,6 @@ streamlit>=1.28.0
 # HTTP Client (httpx over requests for better async support)
 httpx>=0.25.0
 
-# Async support
-asyncio
-
-# Standard library imports (included in Python)
-# time, datetime, typing, dataclasses, enum, logging, re, json
-
-streamlit>=1.28.0
-httpx>=0.25.0
+# Additional useful packages
+pandas>=2.0.0
+numpy>=1.24.0
