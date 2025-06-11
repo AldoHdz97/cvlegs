@@ -51,12 +51,21 @@ class APIResponse:
     request_id: Optional[str] = None
 
 class CVBackendClient:
-    """Enhanced CV Backend Client with Endpoint Discovery"""
+    """Enhanced CV Backend Client with Railway Private Networking"""
     
-    def __init__(self, base_url: str = "https://cvbrain-production.up.railway.app"):
-        self.base_url = base_url
-        self.timeout = 30.0  # Reduced timeout for faster debugging
-        self.max_retries = 2  # Reduced retries for faster feedback
+    def __init__(self, base_url: str = None):
+        # Try Railway internal networking first, fallback to public
+        if base_url is None:
+            # Railway private network (works if frontend is also on Railway)
+            self.base_url = "https://cvbrain.railway.internal"
+            self.use_private_network = True
+        else:
+            self.base_url = base_url
+            self.use_private_network = False
+            
+        self.public_fallback = "https://cvbrain-production.up.railway.app"
+        self.timeout = 30.0
+        self.max_retries = 2
         self.retry_delay = 1.0
         
         # Circuit breaker state
@@ -69,7 +78,9 @@ class CVBackendClient:
         self.query_endpoint = None
         self._endpoint_discovered = False
         
-        logger.info(f"CV Backend Client v2.0 initialized for {self.base_url}")
+        logger.info(f"CV Backend Client initialized for {self.base_url}")
+        if self.use_private_network:
+            logger.info("🔒 Using Railway private networking")
     
     async def _discover_endpoints(self) -> Optional[str]:
         """Discover the correct query endpoint"""
