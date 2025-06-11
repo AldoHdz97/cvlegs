@@ -1,6 +1,5 @@
 """
-SIMPLE API Client - Just Ask Questions!
-ChromaDB handles the complexity, we just ask questions.
+CORRECTED API Client - Using the RIGHT endpoint!
 """
 
 import httpx
@@ -21,39 +20,57 @@ class APIResponse:
     processing_time: Optional[float] = None
 
 class CVBackendClient:
-    """SIMPLE CV Client - Just Ask Questions!"""
+    """CORRECTED CV Client - Using /query not /v1/query"""
     
     def __init__(self):
         self.base_url = "https://cvbrain-production.up.railway.app"
         self.timeout = 30.0
         
-        logger.info("🎯 SIMPLE API Client - ChromaDB does the heavy lifting!")
+        # THE FIX: Use /query not /v1/query
+        self.endpoint = "/query"
+        
+        logger.info(f"🎯 CORRECTED API Client - endpoint: {self.endpoint}")
     
     async def _make_request_async(self, question: str) -> APIResponse:
-        """Simple request - just send the question!"""
+        """Make request to the CORRECT endpoint"""
         
-        # MINIMAL payload - let the backend handle everything else
-        payload = {"question": question}
+        # Minimal payload matching UltimateQueryRequest
+        payload = {
+            "question": question,
+            "k": 3,
+            "query_type": "general",
+            "response_format": "detailed",
+            "include_sources": True,
+            "language": "en"
+        }
         
         start_time = time.time()
         
+        # THE FIX: Use the correct endpoint
+        url = f"{self.base_url}{self.endpoint}"
+        
         async with httpx.AsyncClient(timeout=self.timeout) as client:
             try:
-                logger.info(f"❓ Asking: {question[:50]}...")
+                logger.info(f"🚀 POST {url}")
+                logger.debug(f"📤 Payload: {payload}")
                 
                 response = await client.post(
-                    f"{self.base_url}/v1/query",
+                    url,
                     json=payload,
-                    headers={"Content-Type": "application/json"}
+                    headers={
+                        "Content-Type": "application/json",
+                        "Accept": "application/json"
+                    }
                 )
                 
                 processing_time = time.time() - start_time
+                logger.info(f"📥 Response: {response.status_code} in {processing_time:.2f}s")
                 
                 if response.status_code == 200:
                     data = response.json()
-                    answer = data.get("answer") or data.get("response") or str(data)
+                    answer = data.get("answer", "")
                     
-                    logger.info(f"✅ Got answer ({len(answer)} chars)")
+                    logger.info(f"✅ SUCCESS! Answer length: {len(answer)} chars")
                     
                     return APIResponse(
                         success=True,
@@ -61,7 +78,7 @@ class CVBackendClient:
                         processing_time=processing_time
                     )
                 else:
-                    error_msg = f"HTTP {response.status_code}: {response.text[:100]}"
+                    error_msg = f"HTTP {response.status_code}: {response.text[:200]}"
                     logger.error(f"❌ {error_msg}")
                     
                     return APIResponse(
@@ -83,7 +100,7 @@ class CVBackendClient:
                 )
     
     def query_cv(self, message: str, response_format: str = None) -> APIResponse:
-        """Just ask a question - that's it!"""
+        """Query CV using the CORRECT endpoint"""
         try:
             return asyncio.run(self._make_request_async(message))
         except Exception as e:
@@ -94,7 +111,7 @@ class CVBackendClient:
             )
     
     def get_health_status(self) -> Dict[str, Any]:
-        """Simple health check"""
+        """Health check using the correct backend"""
         try:
             result = asyncio.run(self._check_health())
             return {"status": "healthy" if result else "unhealthy"}
@@ -102,7 +119,7 @@ class CVBackendClient:
             return {"status": "error"}
     
     async def _check_health(self) -> bool:
-        """Check if backend is alive"""
+        """Check backend health"""
         try:
             async with httpx.AsyncClient(timeout=5.0) as client:
                 response = await client.get(f"{self.base_url}/health")
