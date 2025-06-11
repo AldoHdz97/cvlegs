@@ -342,23 +342,10 @@ if prompt := st.chat_input("Ask! Don't be shy !", key="main_chat_input"):
                     streamed = stream_message(api_response.content)
                     st.session_state.messages.append({"role": "assistant", "content": streamed})
                     
-                    # Show metadata if available
-                    if api_response.metadata:
-                        with st.expander("📊 Response Details", expanded=False):
-                            col1, col2 = st.columns(2)
-                            
-                            with col1:
-                                if api_response.confidence_score:
-                                    st.metric("Confidence Score", f"{api_response.confidence_score:.1%}")
-                                if api_response.metadata.get("relevant_chunks"):
-                                    st.metric("Sources Used", api_response.metadata["relevant_chunks"])
-                            
-                            with col2:
-                                if api_response.processing_time:
-                                    st.metric("Response Time", f"{api_response.processing_time:.2f}s")
-                                if api_response.metadata.get("query_type"):
-                                    st.metric("Query Type", api_response.metadata["query_type"].title())
-                
+                    if hasattr(api_response, 'processing_time') and api_response.processing_time:
+                        st.caption(f"⚡ Response time: {api_response.processing_time:.2f}s")
+                        
+                       
                 else:
                     # Handle API errors gracefully
                     error_message = f"⚠️ Having trouble accessing my knowledge base right now. {api_response.error or 'Please try again in a moment.'}"
