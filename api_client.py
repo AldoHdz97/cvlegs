@@ -1,5 +1,5 @@
 """
-MULTI-USER API Client - Session Isolated
+MULTI-USER API Client - Session Isolated - FIXED ERROR HANDLING
 Each user gets their own session - no shared state!
 """
 
@@ -23,7 +23,7 @@ class APIResponse:
     processing_time: Optional[float] = None
 
 class CVBackendClient:
-    """Multi-User CV Client - Session isolated per user"""
+    """Multi-User CV Client - Session isolated per user - FIXED"""
     
     def __init__(self, session_id: str = None):
         self.base_url = "https://cvbrain-production.up.railway.app"
@@ -149,6 +149,7 @@ class CVBackendClient:
             return asyncio.run(self._make_request_async(message))
         except Exception as e:
             self.failure_count += 1
+            logger.error(f"Query failed for session {self.session_id[:8]}: {e}")
             return APIResponse(
                 success=False,
                 content="",
@@ -156,24 +157,38 @@ class CVBackendClient:
             )
     
     def get_health_status(self) -> Dict[str, Any]:
-        """Session-specific health check"""
+        """Session-specific health check - FIXED ERROR HANDLING"""
         try:
             result = asyncio.run(self._check_health())
-            return {
+            
+            # ✅ Always return a proper dictionary
+            health_status = {
                 "status": "healthy" if result else "unhealthy",
-                "session_id": self.session_id[:8],
-                "failure_count": self.failure_count,
-                "last_request": self.last_request_time
+                "session_id": self.session_id[:8] if self.session_id else "unknown", 
+                "failure_count": getattr(self, 'failure_count', 0),
+                "last_request": getattr(self, 'last_request_time', None),
+                "backend_url": self.base_url,
+                "endpoint": self.endpoint
             }
+            
+            logger.info(f"Health check for session {self.session_id[:8]}: {health_status['status']}")
+            return health_status
+            
         except Exception as e:
+            logger.error(f"Health check failed for session {self.session_id[:8]}: {e}")
+            
+            # ✅ Always return a dictionary, even on error
             return {
                 "status": "error", 
                 "error": str(e),
-                "session_id": self.session_id[:8]
+                "session_id": self.session_id[:8] if self.session_id else "unknown",
+                "failure_count": getattr(self, 'failure_count', 0),
+                "backend_url": self.base_url,
+                "endpoint": self.endpoint
             }
     
     async def _check_health(self) -> bool:
-        """Check backend health per session"""
+        """Check backend health per session - ROBUST ERROR HANDLING"""
         try:
             async with httpx.AsyncClient(
                 timeout=5.0, 
@@ -187,44 +202,118 @@ class CVBackendClient:
                         "Connection": "close"
                     }
                 )
-                return response.status_code == 200
-        except:
+                
+                is_healthy = response.status_code == 200
+                logger.debug(f"Health check for session {self.session_id[:8]}: {response.status_code} -> {'healthy' if is_healthy else 'unhealthy'}")
+                
+                return is_healthy
+                
+        except httpx.TimeoutException:
+            logger.warning(f"Health check timeout for session {self.session_id[:8]}")
+            return False
+        except httpx.ConnectError:
+            logger.warning(f"Health check connection error for session {self.session_id[:8]}")
+            return False
+        except Exception as e:
+            logger.warning(f"Health check failed for session {self.session_id[:8]}: {e}")
             return False
 
-# ✅ Session-specific client management
+# ✅ Session-specific client management - FIXED ERROR HANDLING
 def get_session_cv_client() -> CVBackendClient:
-    """Get or create session-specific CV client - NO GLOBAL SHARING"""
+    """Get or create session-specific CV client - NO GLOBAL SHARING - FIXED"""
     
-    # ✅ Create unique session ID per Streamlit user session
-    if "user_session_id" not in st.session_state:
-        st.session_state.user_session_id = str(uuid.uuid4())
-        logger.info(f"New user session created: {st.session_state.user_session_id[:8]}")
-    
-    # ✅ Create session-specific client (stored in user's session state)
-    if "cv_client" not in st.session_state:
-        st.session_state.cv_client = CVBackendClient(st.session_state.user_session_id)
-        logger.info(f"CV client created for session: {st.session_state.user_session_id[:8]}")
-    
-    return st.session_state.cv_client
+    try:
+        # ✅ Create unique session ID per Streamlit user session
+        if "user_session_id" not in st.session_state:
+            st.session_state.user_session_id = str(uuid.uuid4())
+            logger.info(f"New user session created: {st.session_state.user_session_id[:8]}")
+        
+        # ✅ Create session-specific client (stored in user's session state)
+        if "cv_client" not in st.session_state:
+            st.session_state.cv_client = CVBackendClient(st.session_state.user_session_id)
+            logger.info(f"CV client created for session: {st.session_state.user_session_id[:8]}")
+        
+        return st.session_state.cv_client
+        
+    except Exception as e:
+        logger.error(f"Failed to create session CV client: {e}")
+        # ✅ Fallback: create a basic client
+        return CVBackendClient()
 
 def initialize_session_backend():
-    """Initialize backend per user session - NO GLOBAL STATE"""
+    """Initialize backend per user session - FIXED ERROR HANDLING"""
     try:
         client = get_session_cv_client()
+        
+        # ✅ FIXED: Handle None response from get_health_status
         health = client.get_health_status()
         
-        # ✅ Session-specific backend connection status
-        st.session_state.backend_connected = health["status"] == "healthy"
+        if health is None or not isinstance(health, dict):
+            # Fallback if health check fails completely
+            logger.warning("Health check returned invalid response, assuming offline")
+            st.session_state.backend_connected = False
+            return client  # Still return client for potential use
         
-        logger.info(f"Backend initialized for session {client.session_id[:8]}: {health['status']}")
+        # ✅ Safe access to health status
+        is_healthy = health.get("status") == "healthy"
+        st.session_state.backend_connected = is_healthy
+        
+        session_id = getattr(client, 'session_id', 'unknown')
+        session_display = session_id[:8] if session_id != 'unknown' else 'unknown'
+        
+        logger.info(f"Backend initialized for session {session_display}: {health.get('status', 'unknown')}")
         
         return client
+        
     except Exception as e:
         logger.error(f"Backend initialization failed: {e}")
         st.session_state.backend_connected = False
-        return None
+        
+        # ✅ Still return a client even if health check fails  
+        try:
+            return get_session_cv_client()
+        except Exception as fallback_error:
+            logger.error(f"Fallback client creation failed: {fallback_error}")
+            return None
 
 # ✅ Backward compatibility - but now session-isolated
 def get_cv_client() -> CVBackendClient:
     """Backward compatibility function - now session-isolated"""
     return get_session_cv_client()
+
+# ✅ Additional utility functions for debugging
+def reset_session_client():
+    """Reset the session client (useful for debugging)"""
+    try:
+        if "cv_client" in st.session_state:
+            del st.session_state.cv_client
+        if "user_session_id" in st.session_state:
+            old_session = st.session_state.user_session_id[:8]
+            del st.session_state.user_session_id
+            logger.info(f"Reset session client for session: {old_session}")
+        
+        # Create new client
+        return get_session_cv_client()
+    except Exception as e:
+        logger.error(f"Failed to reset session client: {e}")
+        return None
+
+def get_session_debug_info() -> Dict[str, Any]:
+    """Get debug information about the current session"""
+    try:
+        client = get_session_cv_client()
+        health = client.get_health_status()
+        
+        return {
+            "session_id": st.session_state.get("user_session_id", "unknown")[:8],
+            "backend_connected": st.session_state.get("backend_connected", False),
+            "client_session_id": getattr(client, 'session_id', 'unknown')[:8],
+            "failure_count": getattr(client, 'failure_count', 0),
+            "health_status": health,
+            "streamlit_session_state_keys": list(st.session_state.keys())
+        }
+    except Exception as e:
+        return {
+            "error": str(e),
+            "session_debug_failed": True
+        }
