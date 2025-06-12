@@ -1,6 +1,7 @@
 """
-MULTI-USER API Client - Session Isolated - FIXED ERROR HANDLING
+MULTI-USER API Client - Session Isolated - FINAL VERSION
 Each user gets their own session - no shared state!
+Backend-compatible payload (no session_id in body)
 """
 
 import httpx
@@ -23,7 +24,7 @@ class APIResponse:
     processing_time: Optional[float] = None
 
 class CVBackendClient:
-    """Multi-User CV Client - Session isolated per user - FIXED"""
+    """Multi-User CV Client - Session isolated per user - FINAL"""
     
     def __init__(self, session_id: str = None):
         self.base_url = "https://cvbrain-production.up.railway.app"
@@ -40,12 +41,11 @@ class CVBackendClient:
         logger.info(f"Multi-user API Client - Session: {self.session_id[:8]} - endpoint: {self.endpoint}")
     
     async def _make_request_async(self, question: str) -> APIResponse:
-        """Make request with session isolation"""
+        """Make request with session isolation - BACKEND COMPATIBLE"""
         
-        # ✅ Include session info in payload
+        # ✅ FIXED: Only send what backend expects (no session_id in payload)
         payload = {
-            "question": question,
-            "session_id": self.session_id  # Backend can track per session
+            "question": question
         }
         
         start_time = time.time()
@@ -71,7 +71,7 @@ class CVBackendClient:
                     headers={
                         "Content-Type": "application/json",
                         "Accept": "application/json",
-                        "X-Session-ID": self.session_id,     # Session tracking
+                        "X-Session-ID": self.session_id,     # ✅ Session tracking in headers only
                         "X-User-Agent": "CVApp-MultiUser",   # User agent
                         "Connection": "close"                # Force close
                     }
@@ -157,7 +157,7 @@ class CVBackendClient:
             )
     
     def get_health_status(self) -> Dict[str, Any]:
-        """Session-specific health check - FIXED ERROR HANDLING"""
+        """Session-specific health check - ROBUST ERROR HANDLING"""
         try:
             result = asyncio.run(self._check_health())
             
@@ -218,9 +218,9 @@ class CVBackendClient:
             logger.warning(f"Health check failed for session {self.session_id[:8]}: {e}")
             return False
 
-# ✅ Session-specific client management - FIXED ERROR HANDLING
+# ✅ Session-specific client management - ROBUST ERROR HANDLING
 def get_session_cv_client() -> CVBackendClient:
-    """Get or create session-specific CV client - NO GLOBAL SHARING - FIXED"""
+    """Get or create session-specific CV client - NO GLOBAL SHARING"""
     
     try:
         # ✅ Create unique session ID per Streamlit user session
@@ -241,7 +241,7 @@ def get_session_cv_client() -> CVBackendClient:
         return CVBackendClient()
 
 def initialize_session_backend():
-    """Initialize backend per user session - FIXED ERROR HANDLING"""
+    """Initialize backend per user session - ROBUST ERROR HANDLING"""
     try:
         client = get_session_cv_client()
         
