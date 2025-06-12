@@ -3,8 +3,8 @@ import time
 import logging
 from datetime import datetime, timedelta
 
-# Import from our separate API client module
-from api_client import CVBackendClient, APIResponse
+# Import from our separate API client module - now with multi-user support
+from api_client import get_session_cv_client, initialize_session_backend, APIResponse
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -45,29 +45,36 @@ if "greeting_streamed" not in st.session_state:
 if "show_config" not in st.session_state:
     st.session_state.show_config = False
 
-# Backend connection status
+# Backend connection status - now per session
 if "backend_connected" not in st.session_state:
     st.session_state.backend_connected = None
 
-# --- INITIALIZE BACKEND CLIENT ---
-@st.cache_resource
-def get_cv_client() -> CVBackendClient:
-    """Get cached CV backend client instance"""
-    return CVBackendClient()
+# ✅ User session info for debugging
+if "user_session_id" not in st.session_state:
+    st.session_state.user_session_id = None
 
-@st.cache_resource  
-def initialize_backend():
-    """Initialize backend client"""
+# --- INITIALIZE MULTI-USER BACKEND CLIENT ---
+# ❌ REMOVED: Global cached resources that cause multi-user issues
+# @st.cache_resource - This was causing shared state between users!
+
+def get_user_cv_client():
+    """Get session-specific CV client - NO GLOBAL CACHING"""
+    return get_session_cv_client()
+
+def initialize_user_backend():
+    """Initialize backend per user session - NO GLOBAL STATE"""
     try:
-        client = get_cv_client()
-        health = client.get_health_status()
-        st.session_state.backend_connected = health["status"] == "healthy"
+        client = initialize_session_backend()
+        logger.info(f"Backend initialized for user session: {st.session_state.user_session_id[:8] if st.session_state.user_session_id else 'unknown'}")
         return client
     except Exception as e:
+        logger.error(f"Backend initialization failed: {e}")
         st.session_state.backend_connected = False
         return None
 
-cv_client = initialize_backend()
+# ✅ Initialize per-user backend (not cached globally)
+cv_client = initialize_user_backend()
+
 # --- THEME CONTROL ---
 def set_theme():
     if st.session_state.dark_mode:
@@ -75,8 +82,13 @@ def set_theme():
     else:
         bg, text = "#ffffff", "#222326"
     
-    # Add backend status indicator
+    # Add backend status indicator - now per session
     status_color = "#4CAF50" if st.session_state.backend_connected else "#F44336"
+    
+    # ✅ Add session info for debugging (optional)
+    session_info = ""
+    if st.session_state.user_session_id:
+        session_info = f" (Session: {st.session_state.user_session_id[:6]})"
     
     st.markdown(f"""
     <style>
@@ -99,7 +111,7 @@ def set_theme():
             opacity: 0.60;
         }}
         
-        /* Backend status indicator */
+        /* Backend status indicator - now per session */
         .backend-status {{
             position: fixed;
             top: 20px;
@@ -112,6 +124,20 @@ def set_theme():
             font-size: 12px;
             font-weight: bold;
             opacity: 0.8;
+        }}
+        
+        /* Session info indicator (optional debug info) */
+        .session-info {{
+            position: fixed;
+            top: 60px;
+            right: 20px;
+            z-index: 998;
+            background: rgba(128, 128, 128, 0.7);
+            color: white;
+            padding: 3px 8px;
+            border-radius: 10px;
+            font-size: 10px;
+            opacity: 0.6;
         }}
         
         /* Background calendar - Centered-right, large, skeleton style */
@@ -133,12 +159,19 @@ def set_theme():
 
 bg, text = set_theme()
 
-# --- BACKEND STATUS INDICATOR ---
+# --- BACKEND STATUS INDICATOR - Now per session ---
 backend_status_text = "🟢 Connected" if st.session_state.backend_connected else "🔴 Offline"
 st.markdown(
     f'<div class="backend-status">{backend_status_text}</div>',
     unsafe_allow_html=True
 )
+
+# ✅ Optional: Show session info for debugging
+if st.session_state.user_session_id:
+    st.markdown(
+        f'<div class="session-info">Session: {st.session_state.user_session_id[:6]}</div>',
+        unsafe_allow_html=True
+    )
 
 # --- MINIMALISTIC TITLE ---
 st.markdown(
@@ -166,12 +199,17 @@ st.markdown(
 with st.sidebar:
     st.header("⚙️ Configuration")
     
-    # Backend status
+    # Backend status - now per session
     if st.session_state.backend_connected:
         st.success("🟢 Backend Connected")
+        # ✅ Show session info
+        if st.session_state.user_session_id:
+            st.caption(f"Session: {st.session_state.user_session_id[:8]}")
     else:
         st.error("🔴 Backend Offline")
         if st.button("🔄 Reconnect", key="reconnect_backend"):
+            # ✅ Reconnect for this specific session
+            cv_client = initialize_user_backend()
             st.rerun()
     
     st.markdown("---")
@@ -287,19 +325,18 @@ if not st.session_state.greeting_streamed:
                 "Go ahead and ask me anything about my professional life, projects, or skills. "
                 "I promise not to humblebrag too much (okay, maybe just a little).")
     
-    with st.chat_message("assistant"):  # Aquí se usa claramente afuera
+    with st.chat_message("assistant"):
         streamed_greeting = stream_message(greeting)
     
     st.session_state.messages.append({"role": "assistant", "content": streamed_greeting})
     st.session_state.greeting_streamed = True
 else:
-    # Mostrar historial
+    # Mostrar historial - now per session
     for message in st.session_state.messages:
         with st.chat_message(message["role"]):
             st.markdown(message["content"])
 
-
-# --- BACKEND-INTEGRATED CHAT INPUT ---
+# --- MULTI-USER BACKEND-INTEGRATED CHAT INPUT ---
 if prompt := st.chat_input("Ask! Don't be shy !", key="main_chat_input"):
     # Add user message
     st.session_state.messages.append({"role": "user", "content": prompt})
@@ -310,7 +347,7 @@ if prompt := st.chat_input("Ask! Don't be shy !", key="main_chat_input"):
     with st.chat_message("assistant"):
         if not st.session_state.backend_connected or not cv_client:
             # Use original fallback responses when backend is offline
-            with st.spinner(" Thinking..."):
+            with st.spinner("💭 Thinking..."):
                 if any(word in prompt.lower() for word in ['skill', 'technology', 'programming', 'language']):
                     answer = f"Great question about skills! Based on Aldo's background, he has extensive experience with Python, SQL, Tableau, and data analysis. He's particularly strong in economics, data visualization, and building automated reporting systems. His technical skills span from web scraping to machine learning applications."
                 elif any(word in prompt.lower() for word in ['experience', 'work', 'job', 'company']):
@@ -330,11 +367,11 @@ if prompt := st.chat_input("Ask! Don't be shy !", key="main_chat_input"):
             st.session_state.messages.append({"role": "assistant", "content": streamed})
         
         else:
-            # Use backend for real responses
+            # ✅ Use backend for real responses - now per session
             response_format = st.session_state.get("response_format", "Detailed")
             
-            with st.spinner(" Thinking..."):
-                # Make API call to backend
+            with st.spinner("🤔 Thinking..."):
+                # ✅ Make API call to backend with session-specific client
                 api_response = cv_client.query_cv(prompt, response_format)
                 
                 if api_response.success:
@@ -342,12 +379,16 @@ if prompt := st.chat_input("Ask! Don't be shy !", key="main_chat_input"):
                     streamed = stream_message(api_response.content)
                     st.session_state.messages.append({"role": "assistant", "content": streamed})
                     
+                    # ✅ Show response time if available
                     if hasattr(api_response, 'processing_time') and api_response.processing_time:
                         st.caption(f"⚡ Response time: {api_response.processing_time:.2f}s")
                         
-                       
                 else:
-                    # Handle API errors gracefully
+                    # ✅ Handle API errors gracefully per session
                     error_message = f"⚠️ Having trouble accessing my knowledge base right now. {api_response.error or 'Please try again in a moment.'}"
                     streamed = stream_message(error_message)
                     st.session_state.messages.append({"role": "assistant", "content": streamed})
+                    
+                    # ✅ If it's a connection issue, suggest reconnecting
+                    if "connect" in str(api_response.error).lower():
+                        st.caption("💡 Try clicking 'Reconnect' in the sidebar")
