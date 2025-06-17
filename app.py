@@ -18,42 +18,69 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# --- DEVICE DETECTION AND THEME INITIALIZATION ---
-def detect_device_and_set_theme():
-    """Detect device type and set appropriate theme"""
-    if "theme_initialized" not in st.session_state:
-        # JavaScript to detect device type
-        device_detection_script = """
-        <script>
-        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth <= 768;
-        const theme = isMobile ? false : true; // false = light mode, true = dark mode
-        
-        // Store in session storage temporarily
-        sessionStorage.setItem('detectedTheme', theme);
-        
-        // Send message to Streamlit
-        window.parent.postMessage({
-            type: 'streamlit:setComponentValue',
-            value: {theme: theme, mobile: isMobile}
-        }, '*');
-        </script>
-        """
-        
-        st.markdown(device_detection_script, unsafe_allow_html=True)
-        
-        # Default initialization - will be overridden by device detection
-        if "dark_mode" not in st.session_state:
-            st.session_state.dark_mode = True  # Default to dark, will change based on device
-            
-        st.session_state.theme_initialized = True
-
-# Initialize device detection
-detect_device_and_set_theme()
-
 # --- SESSION STATE INITIALIZATION ---
-# Theme (will be set by device detection)
+# Device detection and theme initialization
+if "device_detected" not in st.session_state:
+    # Use a more reliable approach with query params and user agent
+    st.session_state.device_detected = False
+    
+    # JavaScript detection that immediately sets the theme
+    device_detection_js = """
+    <script>
+    function detectAndSetTheme() {
+        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || 
+                         window.innerWidth <= 768 || 
+                         ('ontouchstart' in window);
+        
+        // Set theme immediately based on device
+        const shouldBeLightMode = isMobile;
+        
+        // Create a form to submit the detected theme
+        const form = document.createElement('form');
+        form.method = 'GET';
+        form.style.display = 'none';
+        
+        const input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = 'mobile_detected';
+        input.value = isMobile ? 'true' : 'false';
+        
+        form.appendChild(input);
+        document.body.appendChild(form);
+        
+        // If this is the first load and we detect mobile, reload with parameter
+        const urlParams = new URLSearchParams(window.location.search);
+        if (!urlParams.has('mobile_detected') && isMobile) {
+            window.location.href = window.location.href + '?mobile_detected=true';
+        } else if (!urlParams.has('mobile_detected') && !isMobile) {
+            window.location.href = window.location.href + '?mobile_detected=false';
+        }
+    }
+    
+    // Run detection immediately
+    detectAndSetTheme();
+    </script>
+    """
+    
+    st.markdown(device_detection_js, unsafe_allow_html=True)
+
+# Check for mobile detection from URL parameters
+mobile_detected = st.query_params.get('mobile_detected', None)
+
+# Theme initialization based on device detection
 if "dark_mode" not in st.session_state:
-    st.session_state.dark_mode = True
+    if mobile_detected == 'true':
+        st.session_state.dark_mode = False  # Light mode for mobile
+        st.session_state.device_detected = True
+    elif mobile_detected == 'false':
+        st.session_state.dark_mode = True   # Dark mode for desktop
+        st.session_state.device_detected = True
+    else:
+        st.session_state.dark_mode = True   # Default to dark mode
+        
+# Mark as manually set when user toggles
+if "manual_theme_set" not in st.session_state:
+    st.session_state.manual_theme_set = False
 
 # Interview scheduling
 if "show_calendar_picker" not in st.session_state:
@@ -328,19 +355,22 @@ def set_theme():
     </style>
     
     <script>
-    // Auto-detect theme based on device if not manually set
-    if (!sessionStorage.getItem('manualThemeSet')) {{
-        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth <= 768;
+    // Only auto-detect if theme hasn't been manually set
+    if (!{str(st.session_state.manual_theme_set).lower()}) {{
+        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || 
+                         window.innerWidth <= 768 || 
+                         ('ontouchstart' in window);
         const shouldBeDark = !isMobile; // Mobile = light, Desktop = dark
         
-        // Only change if current theme doesn't match expected
+        // Only change if current theme doesn't match expected and device was detected
         const currentTheme = {str(st.session_state.dark_mode).lower()};
-        if (shouldBeDark !== currentTheme) {{
-            // Trigger theme change
-            window.parent.postMessage({{
-                type: 'streamlit:themeChange',
-                value: shouldBeDark
-            }}, '*');
+        const deviceDetected = {str(st.session_state.device_detected).lower()};
+        
+        if (shouldBeDark !== currentTheme && !deviceDetected) {{
+            // Reload with correct theme parameter
+            const newUrl = new URL(window.location);
+            newUrl.searchParams.set('mobile_detected', isMobile ? 'true' : 'false');
+            window.location.href = newUrl.toString();
         }}
     }}
     </script>
@@ -411,8 +441,8 @@ with st.sidebar:
     
     # Backend status - now per session (only show when there's an issue)
     if st.session_state.backend_connected is False:
-        st.error(" Backend Offline")
-        if st.button("🔄 Reconnect", key="reconnect_backend"):
+        st.error("Backend Offline")
+        if st.button("Reconnect", key="reconnect_backend"):
             cv_client = initialize_user_backend()
             st.rerun()
     
@@ -431,8 +461,7 @@ with st.sidebar:
     dark_mode = st.toggle("🌙 Dark Mode", value=st.session_state.dark_mode, key="theme_toggle")
     if dark_mode != st.session_state.dark_mode:
         st.session_state.dark_mode = dark_mode
-        # Mark as manually set to prevent auto-detection override
-        st.markdown('<script>sessionStorage.setItem("manualThemeSet", "true");</script>', unsafe_allow_html=True)
+        st.session_state.manual_theme_set = True  # Mark as manually set
         st.rerun()
 
     st.markdown("---")
@@ -479,7 +508,7 @@ with st.sidebar:
                     st.rerun()
         
         elif st.session_state.scheduling_step == 2:
-            st.markdown("##### 📝 Step 3: Share your mail and contact info (optional)")
+            st.markdown("##### 📝 Step 3: Add a note (optional)")
             note = st.text_area("Leave a note:", key="note_area", height=80)
             st.session_state.user_note = note
             
@@ -498,7 +527,7 @@ with st.sidebar:
                     st.session_state.scheduling_step = 1
                     st.rerun()
             with col2:
-                if st.button(" Request Interview", key="submit_int", type="primary", use_container_width=True):
+                if st.button("Request Interview", key="submit_int", type="primary", use_container_width=True):
                     st.success("🎉 Interview request sent! You'll receive a confirmation email soon.")
                     # Reset scheduling state
                     st.session_state.show_calendar_picker = False
@@ -561,7 +590,7 @@ if prompt := st.chat_input("Ask! Don't be shy !", key="main_chat_input"):
         with st.chat_message("assistant"):
             if st.session_state.backend_connected is False or not cv_client:
                 # Use original fallback responses when backend is offline
-                with st.spinner(" Thinking..."):
+                with st.spinner("Thinking..."):
                     if any(word in prompt.lower() for word in ['skill', 'technology', 'programming', 'language']):
                         answer = f"Great question about skills! Based on Aldo's background, he has extensive experience with Python, SQL, Tableau, and data analysis. He's particularly strong in economics, data visualization, and building automated reporting systems. His technical skills span from web scraping to machine learning applications."
                     elif any(word in prompt.lower() for word in ['experience', 'work', 'job', 'company']):
@@ -584,7 +613,7 @@ if prompt := st.chat_input("Ask! Don't be shy !", key="main_chat_input"):
                 # Use backend for real responses
                 response_format = st.session_state.get("response_format", "Detailed")
                 
-                with st.spinner(" Thinking..."):
+                with st.spinner("Thinking..."):
                     # Make API call to backend with session-specific client
                     api_response = cv_client.query_cv(prompt, response_format)
                     
@@ -595,14 +624,14 @@ if prompt := st.chat_input("Ask! Don't be shy !", key="main_chat_input"):
                         
                         # Show response time if available
                         if hasattr(api_response, 'processing_time') and api_response.processing_time:
-                            st.caption(f" Response time: {api_response.processing_time:.2f}s")
+                            st.caption(f"⚡ Response time: {api_response.processing_time:.2f}s")
                             
                     else:
                         # Handle API errors gracefully per session
-                        error_message = f" Having trouble accessing my knowledge base right now. {api_response.error or 'Please try again in a moment.'}"
+                        error_message = f"Having trouble accessing my knowledge base right now. {api_response.error or 'Please try again in a moment.'}"
                         streamed = stream_message(error_message)
                         st.session_state.messages.append({"role": "assistant", "content": streamed})
                         
                         # If it's a connection issue, suggest reconnecting
                         if "connect" in str(api_response.error).lower():
-                            st.caption(" Try clicking 'Reconnect' in the sidebar")
+                            st.caption("Try clicking 'Reconnect' in the sidebar")
