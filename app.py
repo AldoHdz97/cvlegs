@@ -123,55 +123,99 @@ def set_theme():
         .stChatMessage {{background: transparent !important; color: {text} !important;}}
         #MainMenu, footer, header {{visibility: hidden;}}
 
-        /* Complete chat input styling override */
-        .stChatInput > div > div > div > div {{
+        /* NUCLEAR APPROACH - Override ALL possible red border sources */
+        .stChatInput, 
+        .stChatInput *, 
+        .stChatInput *:focus, 
+        .stChatInput *:hover, 
+        .stChatInput *:active,
+        .stChatInput *:invalid,
+        .stChatInput *:focus-visible {{
             border: 1px solid #555 !important;
-            background-color: #222 !important;
-            border-radius: 1.5rem !important;
+            outline: none !important;
             box-shadow: none !important;
         }}
 
+        /* Target the actual input container */
+        .stChatInput > div {{
+            border: 1px solid #555 !important;
+            border-radius: 1.5rem !important;
+            background-color: #222 !important;
+            box-shadow: none !important;
+        }}
+
+        .stChatInput > div > div {{
+            border: none !important;
+            background-color: transparent !important;
+        }}
+
+        .stChatInput > div > div > div {{
+            border: none !important;
+            background-color: transparent !important;
+        }}
+
+        .stChatInput > div > div > div > div {{
+            border: none !important;
+            background-color: transparent !important;
+        }}
+
+        /* The textarea itself */
         .stChatInput textarea {{
             border: none !important;
             background-color: transparent !important;
             color: white !important;
             padding-left: 0.75rem !important;
             padding-top: 0.5rem !important;
-            box-shadow: none !important;
             outline: none !important;
-        }}
-
-        .stChatInput textarea:focus {{
-            outline: none !important;
-            border: none !important;
             box-shadow: none !important;
             caret-color: white !important;
         }}
 
-        .stChatInput textarea:focus-visible {{
-            outline: none !important;
-            border: none !important;
-            box-shadow: none !important;
-        }}
-
-        /* Override any error states */
-        .stChatInput div[data-baseweb="input"] {{
+        /* Force override any dynamic styles that Streamlit adds */
+        .stChatInput [class*="css"] {{
             border: 1px solid #555 !important;
             box-shadow: none !important;
         }}
 
-        .stChatInput div[data-baseweb="input"]:focus-within {{
-            border: 1px solid #666 !important;
+        /* Override BaseWeb input component styles */
+        div[data-baseweb="input"] {{
+            border: 1px solid #555 !important;
             box-shadow: none !important;
         }}
 
-        /* Force remove any red borders */
+        div[data-baseweb="input"]:focus-within {{
+            border: 1px solid #555 !important;
+            box-shadow: none !important;
+        }}
+
+        /* Override any error states */
+        .stChatInput *[aria-invalid="true"] {{
+            border: 1px solid #555 !important;
+            box-shadow: none !important;
+        }}
+
+        /* CSS Custom Properties override */
+        .stChatInput {{
+            --border-color: #555 !important;
+            --focus-border-color: #555 !important;
+            --error-border-color: #555 !important;
+        }}
+
+        /* Force remove any red borders with attribute selectors */
         .stChatInput *[style*="border-color: rgb(255, 75, 75)"] {{
             border-color: #555 !important;
         }}
 
         .stChatInput *[style*="border-color: red"] {{
             border-color: #555 !important;
+        }}
+
+        .stChatInput *[style*="border: 1px solid red"] {{
+            border: 1px solid #555 !important;
+        }}
+
+        .stChatInput *[style*="border: 1px solid rgb(255, 75, 75)"] {{
+            border: 1px solid #555 !important;
         }}
 
         .engine-icon {{
