@@ -124,7 +124,7 @@ def set_theme():
         .stChatMessage {{background: transparent !important; color: {text} !important;}}
         #MainMenu, footer, header {{visibility: hidden;}}
 
-        /* NUCLEAR APPROACH - Override ALL possible red border sources */
+        /* NUCLEAR APPROACH - Override ALL possible border sources */
         .stChatInput, 
         .stChatInput *, 
         .stChatInput *:focus, 
@@ -132,14 +132,14 @@ def set_theme():
         .stChatInput *:active,
         .stChatInput *:invalid,
         .stChatInput *:focus-visible {{
-            border: 1px solid #555 !important;
+            border: none !important;
             outline: none !important;
             box-shadow: none !important;
         }}
 
-        /* Target the actual input container */
+        /* Target the actual input container - REMOVE ALL BORDERS */
         .stChatInput > div {{
-            border: 1px solid #555 !important;
+            border: none !important;
             border-radius: 1.5rem !important;
             background-color: #222 !important;
             box-shadow: none !important;
@@ -174,49 +174,41 @@ def set_theme():
 
         /* Force override any dynamic styles that Streamlit adds */
         .stChatInput [class*="css"] {{
-            border: 1px solid #555 !important;
+            border: none !important;
             box-shadow: none !important;
         }}
 
         /* Override BaseWeb input component styles */
         div[data-baseweb="input"] {{
-            border: 1px solid #555 !important;
+            border: none !important;
             box-shadow: none !important;
         }}
 
         div[data-baseweb="input"]:focus-within {{
-            border: 1px solid #555 !important;
+            border: none !important;
             box-shadow: none !important;
         }}
 
         /* Override any error states */
         .stChatInput *[aria-invalid="true"] {{
-            border: 1px solid #555 !important;
+            border: none !important;
             box-shadow: none !important;
         }}
 
         /* CSS Custom Properties override */
         .stChatInput {{
-            --border-color: #555 !important;
-            --focus-border-color: #555 !important;
-            --error-border-color: #555 !important;
+            --border-color: transparent !important;
+            --focus-border-color: transparent !important;
+            --error-border-color: transparent !important;
         }}
 
-        /* Force remove any red borders with attribute selectors */
-        .stChatInput *[style*="border-color: rgb(255, 75, 75)"] {{
-            border-color: #555 !important;
+        /* Force remove any borders with attribute selectors */
+        .stChatInput *[style*="border"] {{
+            border: none !important;
         }}
 
-        .stChatInput *[style*="border-color: red"] {{
-            border-color: #555 !important;
-        }}
-
-        .stChatInput *[style*="border: 1px solid red"] {{
-            border: 1px solid #555 !important;
-        }}
-
-        .stChatInput *[style*="border: 1px solid rgb(255, 75, 75)"] {{
-            border: 1px solid #555 !important;
+        .stChatInput *[style*="outline"] {{
+            outline: none !important;
         }}
 
         .engine-icon {{
@@ -346,7 +338,7 @@ with st.sidebar:
     
     # Backend status - now per session (only show when there's an issue)
     if st.session_state.backend_connected is False:
-        st.error(" Backend Offline")
+        st.error("🔴 Backend Offline")
         if st.button("🔄 Reconnect", key="reconnect_backend"):
             cv_client = initialize_user_backend()
             st.rerun()
@@ -431,7 +423,7 @@ with st.sidebar:
                     st.session_state.scheduling_step = 1
                     st.rerun()
             with col2:
-                if st.button(" Request Interview", key="submit_int", type="primary", use_container_width=True):
+                if st.button("✅ Request Interview", key="submit_int", type="primary", use_container_width=True):
                     st.success("🎉 Interview request sent! You'll receive a confirmation email soon.")
                     # Reset scheduling state
                     st.session_state.show_calendar_picker = False
@@ -494,7 +486,7 @@ if prompt := st.chat_input("Ask! Don't be shy !", key="main_chat_input"):
         with st.chat_message("assistant"):
             if st.session_state.backend_connected is False or not cv_client:
                 # Use original fallback responses when backend is offline
-                with st.spinner(" Thinking..."):
+                with st.spinner("💭 Thinking..."):
                     if any(word in prompt.lower() for word in ['skill', 'technology', 'programming', 'language']):
                         answer = f"Great question about skills! Based on Aldo's background, he has extensive experience with Python, SQL, Tableau, and data analysis. He's particularly strong in economics, data visualization, and building automated reporting systems. His technical skills span from web scraping to machine learning applications."
                     elif any(word in prompt.lower() for word in ['experience', 'work', 'job', 'company']):
@@ -517,7 +509,7 @@ if prompt := st.chat_input("Ask! Don't be shy !", key="main_chat_input"):
                 # Use backend for real responses
                 response_format = st.session_state.get("response_format", "Detailed")
                 
-                with st.spinner(" Thinking..."):
+                with st.spinner("🤔 Thinking..."):
                     # Make API call to backend with session-specific client
                     api_response = cv_client.query_cv(prompt, response_format)
                     
@@ -528,14 +520,14 @@ if prompt := st.chat_input("Ask! Don't be shy !", key="main_chat_input"):
                         
                         # Show response time if available
                         if hasattr(api_response, 'processing_time') and api_response.processing_time:
-                            st.caption(f" Response time: {api_response.processing_time:.2f}s")
+                            st.caption(f"⚡ Response time: {api_response.processing_time:.2f}s")
                             
                     else:
                         # Handle API errors gracefully per session
-                        error_message = f" Having trouble accessing my knowledge base right now. {api_response.error or 'Please try again in a moment.'}"
+                        error_message = f"⚠️ Having trouble accessing my knowledge base right now. {api_response.error or 'Please try again in a moment.'}"
                         streamed = stream_message(error_message)
                         st.session_state.messages.append({"role": "assistant", "content": streamed})
                         
                         # If it's a connection issue, suggest reconnecting
                         if "connect" in str(api_response.error).lower():
-                            st.caption(" Try clicking 'Reconnect' in the sidebar")
+                            st.caption("💡 Try clicking 'Reconnect' in the sidebar")
