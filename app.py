@@ -147,12 +147,36 @@ def set_theme():
             padding-top: 2rem !important;
         }}
         
-        /* Clean chat messages - no colored backgrounds */
+        /* Clean chat messages - no colored backgrounds, proper alignment */
         div[data-testid="chat-message"],
         .stChatMessage {{
             background: transparent !important;
             color: {text} !important;
             margin-bottom: 1rem !important;
+            display: flex !important;
+            align-items: flex-start !important;
+            gap: 0.75rem !important;
+        }}
+        
+        /* Remove avatar backgrounds */
+        div[data-testid="chat-message"] > div:first-child,
+        .stChatMessage > div:first-child {{
+            background: transparent !important;
+            border-radius: 50% !important;
+            padding: 0 !important;
+            width: 40px !important;
+            height: 40px !important;
+            min-width: 40px !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+        }}
+        
+        /* Chat message content alignment */
+        div[data-testid="chat-message"] > div:last-child,
+        .stChatMessage > div:last-child {{
+            flex: 1 !important;
+            padding-top: 8px !important;
         }}
         
         div[data-testid="chat-message"] p,
@@ -160,6 +184,14 @@ def set_theme():
         .stChatMessage p,
         .stChatMessage div {{
             color: {text} !important;
+            margin: 0 !important;
+            line-height: 1.5 !important;
+        }}
+        
+        /* Hide Streamlit loading spinner */
+        .stSpinner,
+        div[data-testid="stSpinner"] {{
+            display: none !important;
         }}
         
         /* Hide Streamlit branding */
@@ -291,39 +323,36 @@ def set_theme():
             100% {{ opacity: 0; transform: translate(-50%, -50%) scale(0.9); visibility: hidden; }}
         }}
 
-        /* Animated dots for loading */
+        /* Simple animated dots for loading - aligned with avatar */
         .loading-dots {{
-            display: inline-flex;
+            display: flex;
             align-items: center;
+            height: 40px;
+            padding-top: 8px;
+            gap: 4px;
         }}
 
-        .loading-dots::after {{
-            content: '';
-            display: inline-block;
+        .loading-dots span {{
             width: 4px;
             height: 4px;
             border-radius: 50%;
             background-color: {text};
-            animation: dots 1.5s infinite;
-            margin-left: 2px;
+            animation: dotPulse 1.4s infinite ease-in-out;
         }}
 
-        .loading-dots::before {{
-            content: '..';
-            display: inline-block;
-            animation: dots-text 1.5s infinite;
-        }}
+        .loading-dots span:nth-child(1) {{ animation-delay: 0s; }}
+        .loading-dots span:nth-child(2) {{ animation-delay: 0.2s; }}
+        .loading-dots span:nth-child(3) {{ animation-delay: 0.4s; }}
 
-        @keyframes dots {{
-            0%, 20% {{ opacity: 0; }}
-            50% {{ opacity: 1; }}
-            100% {{ opacity: 0; }}
-        }}
-
-        @keyframes dots-text {{
-            0% {{ content: '.'; }}
-            33% {{ content: '..'; }}
-            66% {{ content: '...'; }}
+        @keyframes dotPulse {{
+            0%, 60%, 100% {{ 
+                opacity: 0.3; 
+                transform: scale(0.8); 
+            }}
+            30% {{ 
+                opacity: 1; 
+                transform: scale(1); 
+            }}
         }}
 
         /* Mobile responsive */
@@ -625,22 +654,23 @@ if prompt := st.chat_input("Ask! Don't be shy !", key="main_chat_input"):
         
         with st.chat_message("assistant"):
             if st.session_state.backend_connected is False or not cv_client:
-                # Clean loading indicator
-                with st.spinner(""):
-                    st.markdown('<div class="loading-dots"></div>', unsafe_allow_html=True)
-                    
-                    if any(word in prompt.lower() for word in ['skill', 'technology', 'programming', 'language']):
-                        answer = "Great question about skills! Based on Aldo's background, he has extensive experience with Python, SQL, Tableau, and data analysis. He's particularly strong in economics, data visualization, and building automated reporting systems. His technical skills span from web scraping to machine learning applications."
-                    elif any(word in prompt.lower() for word in ['experience', 'work', 'job', 'company']):
-                        answer = "Aldo has diverse professional experience! He's currently a Social Listening & Insights Analyst at Swarm Data and People, where he analyzes performance for multiple Tec de Monterrey campuses. Previously, he worked as a Data Analyst at Wii México and had his own content creation business. His experience spans data analysis, automation, and stakeholder engagement."
-                    elif any(word in prompt.lower() for word in ['education', 'degree', 'university', 'study']):
-                        answer = "Aldo graduated with a B.A. in Economics from Tecnológico de Monterrey (2015-2021). His academic background includes statistical analysis projects using Python and R. He's also earned certifications in Tableau Desktop, Power BI, and OpenAI development."
-                    elif any(word in prompt.lower() for word in ['project', 'built', 'created', 'developed']):
-                        answer = "Aldo has worked on fascinating projects! Some highlights include: a Business Growth Analysis dashboard tracking business density across Nuevo León municipalities, an NFL Betting Index aggregation system, and an AI-driven CV Manager using Next.js and OpenAI. His projects showcase skills in data visualization, web development, and AI integration."
-                    else:
-                        answer = f"Thank you for asking about '{prompt}'. I'd be happy to help you learn more about Aldo's professional background! He's an accomplished economist and data analyst with strong technical skills in Python, data visualization, and AI applications. What specific aspect would you like to know more about?"
-                    
-                    time.sleep(0.5)
+                # Clean loading indicator aligned with avatar
+                loading_placeholder = st.empty()
+                loading_placeholder.markdown('<div class="loading-dots"><span></span><span></span><span></span></div>', unsafe_allow_html=True)
+                
+                if any(word in prompt.lower() for word in ['skill', 'technology', 'programming', 'language']):
+                    answer = "Great question about skills! Based on Aldo's background, he has extensive experience with Python, SQL, Tableau, and data analysis. He's particularly strong in economics, data visualization, and building automated reporting systems. His technical skills span from web scraping to machine learning applications."
+                elif any(word in prompt.lower() for word in ['experience', 'work', 'job', 'company']):
+                    answer = "Aldo has diverse professional experience! He's currently a Social Listening & Insights Analyst at Swarm Data and People, where he analyzes performance for multiple Tec de Monterrey campuses. Previously, he worked as a Data Analyst at Wii México and had his own content creation business. His experience spans data analysis, automation, and stakeholder engagement."
+                elif any(word in prompt.lower() for word in ['education', 'degree', 'university', 'study']):
+                    answer = "Aldo graduated with a B.A. in Economics from Tecnológico de Monterrey (2015-2021). His academic background includes statistical analysis projects using Python and R. He's also earned certifications in Tableau Desktop, Power BI, and OpenAI development."
+                elif any(word in prompt.lower() for word in ['project', 'built', 'created', 'developed']):
+                    answer = "Aldo has worked on fascinating projects! Some highlights include: a Business Growth Analysis dashboard tracking business density across Nuevo León municipalities, an NFL Betting Index aggregation system, and an AI-driven CV Manager using Next.js and OpenAI. His projects showcase skills in data visualization, web development, and AI integration."
+                else:
+                    answer = f"Thank you for asking about '{prompt}'. I'd be happy to help you learn more about Aldo's professional background! He's an accomplished economist and data analyst with strong technical skills in Python, data visualization, and AI applications. What specific aspect would you like to know more about?"
+                
+                time.sleep(0.5)
+                loading_placeholder.empty()
                 
                 streamed = stream_message(answer)
                 st.session_state.messages.append({"role": "assistant", "content": streamed})
@@ -648,22 +678,24 @@ if prompt := st.chat_input("Ask! Don't be shy !", key="main_chat_input"):
             else:
                 response_format = st.session_state.get("response_format", "Detailed")
                 
-                with st.spinner(""):
-                    st.markdown('<div class="loading-dots"></div>', unsafe_allow_html=True)
+                loading_placeholder = st.empty()
+                loading_placeholder.markdown('<div class="loading-dots"><span></span><span></span><span></span></div>', unsafe_allow_html=True)
+                
+                api_response = cv_client.query_cv(prompt, response_format)
+                
+                loading_placeholder.empty()
+                
+                if api_response.success:
+                    streamed = stream_message(api_response.content)
+                    st.session_state.messages.append({"role": "assistant", "content": streamed})
                     
-                    api_response = cv_client.query_cv(prompt, response_format)
+                    if hasattr(api_response, 'processing_time') and api_response.processing_time:
+                        st.caption(f"Response time: {api_response.processing_time:.2f}s")
+                        
+                else:
+                    error_message = f"Having trouble accessing my knowledge base right now. {api_response.error or 'Please try again in a moment.'}"
+                    streamed = stream_message(error_message)
+                    st.session_state.messages.append({"role": "assistant", "content": streamed})
                     
-                    if api_response.success:
-                        streamed = stream_message(api_response.content)
-                        st.session_state.messages.append({"role": "assistant", "content": streamed})
-                        
-                        if hasattr(api_response, 'processing_time') and api_response.processing_time:
-                            st.caption(f"Response time: {api_response.processing_time:.2f}s")
-                            
-                    else:
-                        error_message = f"Having trouble accessing my knowledge base right now. {api_response.error or 'Please try again in a moment.'}"
-                        streamed = stream_message(error_message)
-                        st.session_state.messages.append({"role": "assistant", "content": streamed})
-                        
-                        if "connect" in str(api_response.error).lower():
-                            st.caption("Try clicking 'Reconnect' in the sidebar")
+                    if "connect" in str(api_response.error).lower():
+                        st.caption("Try clicking 'Reconnect' in the sidebar")
