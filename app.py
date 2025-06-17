@@ -76,12 +76,13 @@ def initialize_user_backend():
 cv_client = initialize_user_backend()
 
 # --- THEME CONTROL ---
+
 def set_theme():
     if st.session_state.dark_mode:
         bg, text = "#000510", "#ffffff"
     else:
         bg, text = "#ffffff", "#222326"
-    
+
     st.markdown(f"""
     <style>
         .stApp {{background-color: {bg} !important; color: {text} !important;}}
@@ -90,7 +91,22 @@ def set_theme():
         .stChatMessage {{background: transparent !important; color: {text} !important;}}
         #MainMenu, footer, header {{visibility: hidden;}}
 
-        /* Icono de motor */
+        .stChatInput textarea:focus {{
+            outline: none !important;
+            border: 1px solid #aaa !important;
+            box-shadow: none !important;
+            caret-color: white !important;
+        }}
+
+        .stChatInput textarea {{
+            border: 1px solid #555 !important;
+            background-color: #222 !important;
+            color: white !important;
+            padding-left: 0.75rem !important;
+            padding-top: 0.5rem !important;
+            border-radius: 1.5rem !important;
+        }}
+
         .engine-icon {{
             position: fixed;
             top: 20px;
@@ -103,7 +119,6 @@ def set_theme():
             opacity: 0.60;
         }}
 
-        /* Estado del backend - solo se mostrará si offline */
         .backend-status {{
             position: fixed;
             top: 20px;
@@ -117,24 +132,19 @@ def set_theme():
             font-weight: bold;
             opacity: 0.8;
         }}
-
-        /* Estilo del input */
-        .stChatInput textarea {{
-            border: 1px solid #ccc !important;
-            box-shadow: none !important;
-            color: #fff !important;
-            background-color: #222 !important;
-        }}
     </style>
-    """, unsafe_allow_html=True)
-    
+""", unsafe_allow_html=True)
     return bg, text
-    
+
+
 bg, text = set_theme()
 
 # --- BACKEND STATUS INDICATOR - Now per session ---
-if not st.session_state.backend_connected:
-    st.markdown('<div class="backend-status">Offline</div>', unsafe_allow_html=True)
+backend_status_text = "🟢 Connected" if st.session_state.backend_connected else "🔴 Offline"
+st.markdown(
+    f'<div class="backend-status">{backend_status_text}</div>',
+    unsafe_allow_html=True
+)
 
 # ✅ Optional: Show session info for debugging
 if st.session_state.user_session_id:
@@ -145,7 +155,7 @@ if st.session_state.user_session_id:
 
 # --- MINIMALISTIC TITLE ---
 st.markdown(
-    f"<h2 style='font-family:Roboto,sans-serif;font-weight:300;margin-bottom:8px;margin-top:8px;color:{text};text-align:center;'>hola, welcome</h2>",
+    f"<h2 style='font-family:Roboto,sans-serif;font-weight:300;margin-bottom:8px;margin-top:8px;color:{text};text-align:center;'>hola,welcome</h2>",
     unsafe_allow_html=True,
 )
 
