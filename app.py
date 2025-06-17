@@ -2,6 +2,7 @@ import streamlit as st
 import time
 import logging
 from datetime import datetime, timedelta
+import hashlib
 
 # Import from our separate API client module - now with multi-user support
 from api_client import get_session_cv_client, initialize_session_backend, APIResponse
@@ -18,69 +19,62 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
+# --- CSS CACHE BUSTER ---
+# Generate a unique CSS version to force refresh
+css_version = hashlib.md5(str(time.time()).encode()).hexdigest()[:8]
+
+# --- DEVICE DETECTION (IMPROVED) ---
+def detect_mobile_device():
+    """More reliable mobile detection"""
+    # First, check if we already detected
+    if "device_type" not in st.session_state:
+        # Use JavaScript for immediate detection
+        detection_script = f"""
+        <script>
+        (function() {{
+            const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
+                           window.innerWidth <= 768 ||
+                           ('ontouchstart' in window) ||
+                           (navigator.maxTouchPoints > 0);
+            
+            // Store in localStorage for persistence
+            localStorage.setItem('deviceType', isMobile ? 'mobile' : 'desktop');
+            
+            // Also set a cookie for server-side detection
+            document.cookie = `deviceType=${{isMobile ? 'mobile' : 'desktop'}}; path=/; max-age=86400`;
+            
+            // Force a rerun if this is first detection
+            if (!localStorage.getItem('themeInitialized')) {{
+                localStorage.setItem('themeInitialized', 'true');
+                window.location.reload();
+            }}
+        }})();
+        </script>
+        """
+        st.markdown(detection_script, unsafe_allow_html=True)
+        
+        # Default mobile detection fallback
+        st.session_state.device_type = "desktop"  # Will be updated by JS
+    
+    return st.session_state.device_type
+
 # --- SESSION STATE INITIALIZATION ---
-# Device detection and theme initialization
-if "device_detected" not in st.session_state:
-    # Use a more reliable approach with query params and user agent
-    st.session_state.device_detected = False
-    
-    # JavaScript detection that immediately sets the theme
-    device_detection_js = """
-    <script>
-    function detectAndSetTheme() {
-        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || 
-                         window.innerWidth <= 768 || 
-                         ('ontouchstart' in window);
-        
-        // Set theme immediately based on device
-        const shouldBeLightMode = isMobile;
-        
-        // Create a form to submit the detected theme
-        const form = document.createElement('form');
-        form.method = 'GET';
-        form.style.display = 'none';
-        
-        const input = document.createElement('input');
-        input.type = 'hidden';
-        input.name = 'mobile_detected';
-        input.value = isMobile ? 'true' : 'false';
-        
-        form.appendChild(input);
-        document.body.appendChild(form);
-        
-        // If this is the first load and we detect mobile, reload with parameter
-        const urlParams = new URLSearchParams(window.location.search);
-        if (!urlParams.has('mobile_detected') && isMobile) {
-            window.location.href = window.location.href + '?mobile_detected=true';
-        } else if (!urlParams.has('mobile_detected') && !isMobile) {
-            window.location.href = window.location.href + '?mobile_detected=false';
-        }
-    }
-    
-    // Run detection immediately
-    detectAndSetTheme();
-    </script>
-    """
-    
-    st.markdown(device_detection_js, unsafe_allow_html=True)
+# Detect device
+device_type = detect_mobile_device()
 
-# Check for mobile detection from URL parameters
-mobile_detected = st.query_params.get('mobile_detected', None)
-
-# Theme initialization based on device detection
+# Theme initialization with device-based defaults
 if "dark_mode" not in st.session_state:
-    if mobile_detected == 'true':
-        st.session_state.dark_mode = False  # Light mode for mobile
-        st.session_state.device_detected = True
-    elif mobile_detected == 'false':
-        st.session_state.dark_mode = True   # Dark mode for desktop
-        st.session_state.device_detected = True
+    # Try to get from URL params first (from JS detection)
+    if "mobile" in st.query_params:
+        st.session_state.dark_mode = False  # Light for mobile
+    elif "desktop" in st.query_params:
+        st.session_state.dark_mode = True   # Dark for desktop
     else:
-        st.session_state.dark_mode = True   # Default to dark mode
-        
-# Mark as manually set when user toggles
-if "manual_theme_set" not in st.session_state:
-    st.session_state.manual_theme_set = False
+        # Fallback: use user agent string analysis
+        user_agent = st.context.headers.get("user-agent", "").lower()
+        is_mobile = any(mobile_indicator in user_agent for mobile_indicator in 
+                       ["mobile", "android", "iphone", "ipad", "ipod", "blackberry", "windows phone"])
+        st.session_state.dark_mode = not is_mobile  # Mobile = light, Desktop = dark
 
 # Interview scheduling
 if "show_calendar_picker" not in st.session_state:
@@ -104,11 +98,11 @@ if "greeting_streamed" not in st.session_state:
 if "show_config" not in st.session_state:
     st.session_state.show_config = False
 
-# Backend connection status - now per session
+# Backend connection status
 if "backend_connected" not in st.session_state:
     st.session_state.backend_connected = None
 
-# User session info for debugging
+# User session info
 if "user_session_id" not in st.session_state:
     st.session_state.user_session_id = None
 
@@ -116,21 +110,20 @@ if "user_session_id" not in st.session_state:
 if "validation_error" not in st.session_state:
     st.session_state.validation_error = None
 
+# Manual theme override
+if "manual_theme_set" not in st.session_state:
+    st.session_state.manual_theme_set = False
+
 # --- VALIDATION FUNCTIONS ---
 def validate_message(message):
-    """
-    Validate user message before sending to API
-    Returns: (is_valid: bool, error_message: str)
-    """
+    """Validate user message before sending to API"""
     if not message or not message.strip():
         return False, "Please enter a message"
     
-    # Check minimum word count (adjust threshold as needed)
     word_count = len(message.strip().split())
     if word_count < 2:
         return False, "Sorry, your message is too short. Please provide more details."
     
-    # Check minimum character count (optional additional validation)
     if len(message.strip()) < 5:
         return False, "Sorry, your message is too short. Please provide more details."
     
@@ -139,15 +132,14 @@ def validate_message(message):
 def show_validation_error(error_message):
     """Display validation error bubble"""
     st.session_state.validation_error = error_message
-    st.session_state.validation_error_time = time.time()
 
-# --- INITIALIZE MULTI-USER BACKEND CLIENT ---
+# --- BACKEND INITIALIZATION ---
 def get_user_cv_client():
-    """Get session-specific CV client - NO GLOBAL CACHING"""
+    """Get session-specific CV client"""
     return get_session_cv_client()
 
 def initialize_user_backend():
-    """Initialize backend per user session - NO GLOBAL STATE"""
+    """Initialize backend per user session"""
     try:
         client = initialize_session_backend()
         logger.info(f"Backend initialized for user session: {st.session_state.user_session_id[:8] if st.session_state.user_session_id else 'unknown'}")
@@ -157,129 +149,164 @@ def initialize_user_backend():
         st.session_state.backend_connected = False
         return None
 
-# Initialize per-user backend (not cached globally)
+# Initialize backend
 cv_client = initialize_user_backend()
-
-# Only show status indicator when there's actually a connection problem
 if cv_client is None:
     st.session_state.backend_connected = False
-    logger.error("Backend connection failed")
 else:
-    # Remove the connected status entirely - don't set to True
     st.session_state.backend_connected = None
 
-# --- THEME CONTROL WITH DEVICE-RESPONSIVE STYLING ---
+# --- ROBUST THEME CONTROL WITH FORCED CSS ---
 def set_theme():
     if st.session_state.dark_mode:
         bg, text = "#000510", "#ffffff"
-        chat_bg, chat_border = "#222", "transparent"
-        chat_text = "#ffffff"
+        chat_bg, chat_text = "#222", "#ffffff"
+        placeholder_color = "#888"
     else:
         bg, text = "#ffffff", "#222326"
-        chat_bg, chat_border = "#f8f9fa", "transparent" 
-        chat_text = "#222326"
+        chat_bg, chat_text = "#f8f9fa", "#222326"
+        placeholder_color = "#666"
 
+    # NUCLEAR CSS - Forces styles on ALL browsers
     st.markdown(f"""
-    <style>
-        .stApp {{background-color: {bg} !important; color: {text} !important;}}
-        .main .block-container {{background-color: {bg} !important;}}
-        div[data-testid="chat-message"] {{background: transparent !important; color: {text} !important;}}
-        .stChatMessage {{background: transparent !important; color: {text} !important;}}
-        #MainMenu, footer, header {{visibility: hidden;}}
-
-        /* RESPONSIVE CHAT INPUT - ADAPTS TO THEME */
-        .stChatInput, 
-        .stChatInput *, 
-        .stChatInput *:focus, 
-        .stChatInput *:hover, 
-        .stChatInput *:active,
-        .stChatInput *:invalid,
-        .stChatInput *:focus-visible {{
-            border: none !important;
-            outline: none !important;
-            box-shadow: none !important;
+    <style id="theme-css-{css_version}">
+        /* FORCE REMOVE ANY EXISTING STYLES */
+        * {{
+            box-sizing: border-box !important;
+        }}
+        
+        /* MAIN APP STYLING - FORCED */
+        .stApp,
+        .stApp > div,
+        .main,
+        .main > div,
+        section[data-testid="stAppViewContainer"],
+        div[data-testid="stAppViewContainer"] {{
+            background-color: {bg} !important;
+            color: {text} !important;
+        }}
+        
+        .main .block-container,
+        .block-container,
+        div[data-testid="block-container"] {{
+            background-color: {bg} !important;
+            color: {text} !important;
+        }}
+        
+        /* CHAT MESSAGES - FORCED */
+        div[data-testid="chat-message"],
+        .stChatMessage,
+        .stChatMessage > div,
+        .stChatMessage div {{
+            background: transparent !important;
+            color: {text} !important;
+        }}
+        
+        /* CHAT MESSAGE CONTENT - FORCED */
+        div[data-testid="chat-message"] p,
+        div[data-testid="chat-message"] div,
+        div[data-testid="chat-message"] span,
+        .stChatMessage p,
+        .stChatMessage div,
+        .stChatMessage span {{
+            color: {text} !important;
+        }}
+        
+        /* HIDE STREAMLIT ELEMENTS */
+        #MainMenu, footer, header,
+        div[data-testid="stToolbar"],
+        .stDeployButton {{
+            visibility: hidden !important;
+            display: none !important;
         }}
 
-        /* Target the actual input container - THEME RESPONSIVE */
-        .stChatInput > div {{
+        /* NUCLEAR CHAT INPUT STYLING - WORKS ON ALL BROWSERS */
+        .stChatInput,
+        div[data-testid="stChatInput"],
+        div[data-testid="stChatInputContainer"] {{
+            background: transparent !important;
+        }}
+        
+        .stChatInput > div,
+        .stChatInput > div > div,
+        .stChatInput > div > div > div,
+        .stChatInput > div > div > div > div,
+        div[data-testid="stChatInput"] > div,
+        div[data-testid="stChatInput"] > div > div {{
             border: none !important;
-            border-radius: 1.5rem !important;
             background-color: {chat_bg} !important;
+            border-radius: 1.5rem !important;
             box-shadow: 0 2px 10px rgba(0,0,0,0.1) !important;
+            outline: none !important;
         }}
 
-        .stChatInput > div > div {{
-            border: none !important;
-            background-color: transparent !important;
-        }}
-
-        .stChatInput > div > div > div {{
-            border: none !important;
-            background-color: transparent !important;
-        }}
-
-        .stChatInput > div > div > div > div {{
-            border: none !important;
-            background-color: transparent !important;
-        }}
-
-        /* The textarea itself - THEME RESPONSIVE */
-        .stChatInput textarea {{
+        .stChatInput textarea,
+        div[data-testid="stChatInput"] textarea,
+        input[data-testid="stChatInputTextArea"],
+        textarea[data-testid="stChatInputTextArea"] {{
             border: none !important;
             background-color: transparent !important;
             color: {chat_text} !important;
-            padding-left: 0.75rem !important;
-            padding-top: 0.5rem !important;
+            padding: 0.75rem !important;
             outline: none !important;
             box-shadow: none !important;
             caret-color: {chat_text} !important;
+            font-size: 14px !important;
         }}
 
-        .stChatInput textarea::placeholder {{
-            color: {"#888" if st.session_state.dark_mode else "#666"} !important;
+        .stChatInput textarea::placeholder,
+        div[data-testid="stChatInput"] textarea::placeholder {{
+            color: {placeholder_color} !important;
+            opacity: 0.7 !important;
         }}
 
-        /* Force override any dynamic styles that Streamlit adds */
-        .stChatInput [class*="css"] {{
+        .stChatInput textarea:focus,
+        div[data-testid="stChatInput"] textarea:focus {{
+            outline: none !important;
             border: none !important;
             box-shadow: none !important;
         }}
 
-        /* Override BaseWeb input component styles */
-        div[data-baseweb="input"] {{
+        /* FORCE OVERRIDE ALL POSSIBLE INPUT STATES */
+        .stChatInput *,
+        .stChatInput *:focus,
+        .stChatInput *:hover,
+        .stChatInput *:active,
+        div[data-testid="stChatInput"] *,
+        div[data-testid="stChatInput"] *:focus {{
             border: none !important;
-            box-shadow: none !important;
-            background-color: {chat_bg} !important;
-        }}
-
-        div[data-baseweb="input"]:focus-within {{
-            border: none !important;
-            box-shadow: 0 2px 15px rgba(0,0,0,0.15) !important;
-            background-color: {chat_bg} !important;
-        }}
-
-        /* Override any error states */
-        .stChatInput *[aria-invalid="true"] {{
-            border: none !important;
-            box-shadow: none !important;
-        }}
-
-        /* CSS Custom Properties override */
-        .stChatInput {{
-            --border-color: transparent !important;
-            --focus-border-color: transparent !important;
-            --error-border-color: transparent !important;
-        }}
-
-        /* Force remove any borders with attribute selectors */
-        .stChatInput *[style*="border"] {{
-            border: none !important;
-        }}
-
-        .stChatInput *[style*="outline"] {{
             outline: none !important;
         }}
 
+        /* OVERRIDE BASEWEB COMPONENTS */
+        div[data-baseweb="input"],
+        div[data-baseweb="textarea"] {{
+            background-color: {chat_bg} !important;
+            border: none !important;
+            color: {chat_text} !important;
+        }}
+
+        div[data-baseweb="input"]:focus-within,
+        div[data-baseweb="textarea"]:focus-within {{
+            box-shadow: 0 2px 15px rgba(0,0,0,0.15) !important;
+            border: none !important;
+        }}
+
+        /* SIDEBAR STYLING */
+        .stSidebar,
+        section[data-testid="stSidebar"] {{
+            background-color: {bg} !important;
+        }}
+        
+        .stSidebar .stSelectbox,
+        .stSidebar .stToggle,
+        .stSidebar div,
+        .stSidebar p,
+        .stSidebar span {{
+            color: {text} !important;
+        }}
+
+        /* ICONS AND STATUS */
         .engine-icon {{
             position: fixed;
             top: 20px;
@@ -304,7 +331,6 @@ def set_theme():
             font-size: 12px;
             font-weight: bold;
             opacity: 0.9;
-            box-shadow: 0 2px 8px rgba(244, 67, 54, 0.3);
         }}
 
         .validation-bubble {{
@@ -330,96 +356,106 @@ def set_theme():
             100% {{ opacity: 0; transform: translate(-50%, -50%) scale(0.8); display: none; }}
         }}
 
-        /* Mobile responsive adjustments */
+        /* MOBILE RESPONSIVE */
         @media (max-width: 768px) {{
-            .stChatInput {{
-                margin-bottom: 10px;
-            }}
-            
-            .stChatInput > div {{
-                padding: 2px;
-            }}
-            
             .validation-bubble {{
                 font-size: 13px;
                 padding: 10px 20px;
                 max-width: 90vw;
-                text-align: center;
             }}
         }}
-
-        /* Device-specific theme detection script */
-        .theme-detector {{
-            display: none;
+        
+        /* FORCE CSS REFRESH */
+        html {{ 
+            --css-version: {css_version}; 
         }}
     </style>
     
     <script>
-    // Only auto-detect if theme hasn't been manually set
-    if (!{str(st.session_state.manual_theme_set).lower()}) {{
-        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || 
-                         window.innerWidth <= 768 || 
-                         ('ontouchstart' in window);
-        const shouldBeDark = !isMobile; // Mobile = light, Desktop = dark
+    // Force CSS application and cache busting
+    (function() {{
+        // Remove any old theme CSS
+        const oldStyles = document.querySelectorAll('[id^="theme-css-"]');
+        oldStyles.forEach(style => {{
+            if (style.id !== 'theme-css-{css_version}') {{
+                style.remove();
+            }}
+        }});
         
-        // Only change if current theme doesn't match expected and device was detected
-        const currentTheme = {str(st.session_state.dark_mode).lower()};
-        const deviceDetected = {str(st.session_state.device_detected).lower()};
+        // Force style recalculation
+        document.body.style.display = 'none';
+        document.body.offsetHeight; // Trigger reflow
+        document.body.style.display = '';
         
-        if (shouldBeDark !== currentTheme && !deviceDetected) {{
-            // Reload with correct theme parameter
-            const newUrl = new URL(window.location);
-            newUrl.searchParams.set('mobile_detected', isMobile ? 'true' : 'false');
-            window.location.href = newUrl.toString();
+        // Device detection and auto-theme (only if not manually set)
+        const manuallySet = localStorage.getItem('manualThemeSet') === 'true';
+        if (!manuallySet) {{
+            const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
+                           window.innerWidth <= 768 ||
+                           ('ontouchstart' in window);
+            
+            const currentIsDark = {str(st.session_state.dark_mode).lower()};
+            const shouldBeDark = !isMobile;
+            
+            if (currentIsDark !== shouldBeDark) {{
+                // Reload with theme parameter
+                const url = new URL(window.location);
+                url.searchParams.set(isMobile ? 'mobile' : 'desktop', '1');
+                window.location.href = url.toString();
+            }}
         }}
-    }}
+    }})();
     </script>
     """, unsafe_allow_html=True)
+    
     return bg, text
 
+# Apply theme
 bg, text = set_theme()
 
-# Display validation error bubble if present
+# Handle theme switching from URL params
+if "mobile" in st.query_params and not st.session_state.manual_theme_set:
+    if st.session_state.dark_mode:  # Should be light for mobile
+        st.session_state.dark_mode = False
+        st.rerun()
+elif "desktop" in st.query_params and not st.session_state.manual_theme_set:
+    if not st.session_state.dark_mode:  # Should be dark for desktop
+        st.session_state.dark_mode = True
+        st.rerun()
+
+# Validation bubble display
 if st.session_state.validation_error:
     st.markdown(f"""
-    <div class="validation-bubble" id="validation-bubble-{int(time.time())}">
+    <div class="validation-bubble">
         {st.session_state.validation_error}
     </div>
     <script>
-        setTimeout(function() {{
-            // Remove the bubble from DOM
+        setTimeout(() => {{
             const bubble = document.querySelector('.validation-bubble');
-            if (bubble) {{
-                bubble.style.display = 'none';
-            }}
+            if (bubble) bubble.style.display = 'none';
         }}, 3000);
     </script>
     """, unsafe_allow_html=True)
     
-    # Clear the validation error immediately after displaying to prevent persistence
-    if 'clear_validation_flag' not in st.session_state:
-        st.session_state.clear_validation_flag = True
+    # Clear after display
+    if 'validation_clear_flag' not in st.session_state:
+        st.session_state.validation_clear_flag = True
 
-# Clear validation error if flag is set
-if st.session_state.get('clear_validation_flag') and st.session_state.validation_error:
+if st.session_state.get('validation_clear_flag'):
     st.session_state.validation_error = None
-    st.session_state.clear_validation_flag = None
+    st.session_state.validation_clear_flag = None
 
-# Show backend status only when offline
+# Backend status
 if st.session_state.backend_connected is False:
-    st.markdown("""
-    <div class="backend-status">
-        OFFLINE
-    </div>
-    """, unsafe_allow_html=True)
+    st.markdown('<div class="backend-status">OFFLINE</div>', unsafe_allow_html=True)
 
-# --- MINIMALISTIC TITLE ---
+# Title
 st.markdown(
     f"<h2 style='font-family:Roboto,sans-serif;font-weight:300;margin-bottom:8px;margin-top:8px;color:{text};text-align:center;'>hola,welcome</h2>",
     unsafe_allow_html=True,
 )
 
-# --- ENGINE ICON (GREY, TRANSPARENT) ---
+# Engine icon
 engine_svg = '''
 <svg width="38" height="38" fill="gray" fill-opacity="0.40" style="display:inline-block;vertical-align:middle;border-radius:12px;">
     <ellipse cx="19" cy="19" rx="18" ry="14" fill="gray" fill-opacity="0.25"/>
@@ -429,17 +465,12 @@ engine_svg = '''
 </svg>
 '''
 
-# Place engine icon at top-left
-st.markdown(
-    f'<div class="engine-icon" style="width:38px;height:38px;" title="hola, welcome">{engine_svg}</div>',
-    unsafe_allow_html=True
-)
+st.markdown(f'<div class="engine-icon">{engine_svg}</div>', unsafe_allow_html=True)
 
-# --- SIDEBAR WITH PROPERLY INDENTED INTERVIEW SCHEDULING ---
+# Sidebar
 with st.sidebar:
     st.header("⚙️ Configuration")
     
-    # Backend status - now per session (only show when there's an issue)
     if st.session_state.backend_connected is False:
         st.error("Backend Offline")
         if st.button("Reconnect", key="reconnect_backend"):
@@ -448,7 +479,6 @@ with st.sidebar:
     
     st.markdown("---")
     
-    # Response Style
     st.selectbox(
         "Response Style",
         ["Detailed", "Summary", "Bullet points", "Technical", "Conversational"],
@@ -457,22 +487,23 @@ with st.sidebar:
         help="Choose how you'd like responses formatted"
     )
     
-    # Dark/Light mode toggle - with manual override detection
+    # Theme toggle with manual override
     dark_mode = st.toggle("🌙 Dark Mode", value=st.session_state.dark_mode, key="theme_toggle")
     if dark_mode != st.session_state.dark_mode:
         st.session_state.dark_mode = dark_mode
-        st.session_state.manual_theme_set = True  # Mark as manually set
+        st.session_state.manual_theme_set = True
+        # Set manual flag in browser
+        st.markdown('<script>localStorage.setItem("manualThemeSet", "true");</script>', unsafe_allow_html=True)
         st.rerun()
 
     st.markdown("---")
     
-    # Schedule Interview button (PROPERLY INDENTED IN SIDEBAR)
+    # Interview scheduling
     if st.button("📅 Schedule an Interview", key="open_schedule", use_container_width=True):
         st.session_state.show_calendar_picker = True
         st.session_state.scheduling_step = 0
         st.rerun()
 
-    # Interview scheduling flow (PROPERLY INDENTED IN SIDEBAR)
     if st.session_state.show_calendar_picker:
         
         if st.session_state.scheduling_step == 0:
@@ -508,13 +539,12 @@ with st.sidebar:
                     st.rerun()
         
         elif st.session_state.scheduling_step == 2:
-            st.markdown("##### 📝 Step 3: Add a note (optional)")
+            st.markdown("##### 📝 Step 3: Add your mail and contact information (optional) ")
             note = st.text_area("Leave a note:", key="note_area", height=80)
             st.session_state.user_note = note
             
-            st.info("📧 You'll receive a confirmation email after your request is reviewed.")
+            st.info("You'll receive a confirmation email after your request is reviewed.")
             
-            # Show summary
             with st.expander("📋 Review Summary", expanded=True):
                 st.write(f"**📅 Day:** {st.session_state.selected_day}")
                 st.write(f"**⏰ Time:** {st.session_state.selected_time}")
@@ -529,16 +559,14 @@ with st.sidebar:
             with col2:
                 if st.button("Request Interview", key="submit_int", type="primary", use_container_width=True):
                     st.success("🎉 Interview request sent! You'll receive a confirmation email soon.")
-                    # Reset scheduling state
                     st.session_state.show_calendar_picker = False
                     st.session_state.scheduling_step = 0
                     st.session_state.selected_day = None
                     st.session_state.selected_time = None
                     st.session_state.user_note = ""
-                    time.sleep(2)  # Brief pause to show success message
+                    time.sleep(2)
                     st.rerun()
 
-        # Cancel button (always visible during scheduling)
         st.markdown("---")
         if st.button("❌ Cancel", key="cancel_int", use_container_width=True):
             st.session_state.show_calendar_picker = False
@@ -554,7 +582,7 @@ def stream_message(msg, delay=0.016):
         time.sleep(delay)
     return txt
 
-# --- Initial greeting ---
+# Initial greeting
 if not st.session_state.greeting_streamed:
     greeting = ("Hi there! I'm Aldo*—or at least, my digital twin. "
                 "Go ahead and ask me anything about my professional life, projects, or skills. "
@@ -566,72 +594,58 @@ if not st.session_state.greeting_streamed:
     st.session_state.messages.append({"role": "assistant", "content": streamed_greeting})
     st.session_state.greeting_streamed = True
 else:
-    # Show message history
     for message in st.session_state.messages:
         with st.chat_message(message["role"]):
             st.markdown(message["content"])
 
-# --- CHAT INPUT WITH VALIDATION ---
+# Chat input with validation
 if prompt := st.chat_input("Ask! Don't be shy !", key="main_chat_input"):
-    # Validate the message
     is_valid, error_message = validate_message(prompt)
     
     if not is_valid:
-        # Show validation bubble instead of processing the message
         show_validation_error(error_message)
-        st.rerun()  # Refresh to show the bubble
+        st.rerun()
     else:
-        # Process the valid message as normal
         st.session_state.messages.append({"role": "user", "content": prompt})
         with st.chat_message("user"):
             st.markdown(prompt)
         
-        # Generate assistant response
         with st.chat_message("assistant"):
             if st.session_state.backend_connected is False or not cv_client:
-                # Use original fallback responses when backend is offline
                 with st.spinner("Thinking..."):
                     if any(word in prompt.lower() for word in ['skill', 'technology', 'programming', 'language']):
-                        answer = f"Great question about skills! Based on Aldo's background, he has extensive experience with Python, SQL, Tableau, and data analysis. He's particularly strong in economics, data visualization, and building automated reporting systems. His technical skills span from web scraping to machine learning applications."
+                        answer = "Great question about skills! Based on Aldo's background, he has extensive experience with Python, SQL, Tableau, and data analysis. He's particularly strong in economics, data visualization, and building automated reporting systems. His technical skills span from web scraping to machine learning applications."
                     elif any(word in prompt.lower() for word in ['experience', 'work', 'job', 'company']):
-                        answer = f"Aldo has diverse professional experience! He's currently a Social Listening & Insights Analyst at Swarm Data and People, where he analyzes performance for multiple Tec de Monterrey campuses. Previously, he worked as a Data Analyst at Wii México and had his own content creation business. His experience spans data analysis, automation, and stakeholder engagement."
+                        answer = "Aldo has diverse professional experience! He's currently a Social Listening & Insights Analyst at Swarm Data and People, where he analyzes performance for multiple Tec de Monterrey campuses. Previously, he worked as a Data Analyst at Wii México and had his own content creation business. His experience spans data analysis, automation, and stakeholder engagement."
                     elif any(word in prompt.lower() for word in ['education', 'degree', 'university', 'study']):
-                        answer = f"Aldo graduated with a B.A. in Economics from Tecnológico de Monterrey (2015-2021). His academic background includes statistical analysis projects using Python and R. He's also earned certifications in Tableau Desktop, Power BI, and OpenAI development."
+                        answer = "Aldo graduated with a B.A. in Economics from Tecnológico de Monterrey (2015-2021). His academic background includes statistical analysis projects using Python and R. He's also earned certifications in Tableau Desktop, Power BI, and OpenAI development."
                     elif any(word in prompt.lower() for word in ['project', 'built', 'created', 'developed']):
-                        answer = f"Aldo has worked on fascinating projects! Some highlights include: a Business Growth Analysis dashboard tracking business density across Nuevo León municipalities, an NFL Betting Index aggregation system, and an AI-driven CV Manager using Next.js and OpenAI. His projects showcase skills in data visualization, web development, and AI integration."
+                        answer = "Aldo has worked on fascinating projects! Some highlights include: a Business Growth Analysis dashboard tracking business density across Nuevo León municipalities, an NFL Betting Index aggregation system, and an AI-driven CV Manager using Next.js and OpenAI. His projects showcase skills in data visualization, web development, and AI integration."
                     else:
                         answer = f"Thank you for asking about '{prompt}'. I'd be happy to help you learn more about Aldo's professional background! He's an accomplished economist and data analyst with strong technical skills in Python, data visualization, and AI applications. What specific aspect would you like to know more about?"
                     
-                    # Small delay for realism
                     time.sleep(0.5)
                 
-                # Stream the response
                 streamed = stream_message(answer)
                 st.session_state.messages.append({"role": "assistant", "content": streamed})
             
             else:
-                # Use backend for real responses
                 response_format = st.session_state.get("response_format", "Detailed")
                 
                 with st.spinner("Thinking..."):
-                    # Make API call to backend with session-specific client
                     api_response = cv_client.query_cv(prompt, response_format)
                     
                     if api_response.success:
-                        # Stream the backend response
                         streamed = stream_message(api_response.content)
                         st.session_state.messages.append({"role": "assistant", "content": streamed})
                         
-                        # Show response time if available
                         if hasattr(api_response, 'processing_time') and api_response.processing_time:
-                            st.caption(f"⚡ Response time: {api_response.processing_time:.2f}s")
+                            st.caption(f"Response time: {api_response.processing_time:.2f}s")
                             
                     else:
-                        # Handle API errors gracefully per session
                         error_message = f"Having trouble accessing my knowledge base right now. {api_response.error or 'Please try again in a moment.'}"
                         streamed = stream_message(error_message)
                         st.session_state.messages.append({"role": "assistant", "content": streamed})
                         
-                        # If it's a connection issue, suggest reconnecting
                         if "connect" in str(api_response.error).lower():
                             st.caption("Try clicking 'Reconnect' in the sidebar")
