@@ -82,14 +82,6 @@ def set_theme():
     else:
         bg, text = "#ffffff", "#222326"
     
-    # Add backend status indicator - now per session
-    status_color = "#4CAF50" if st.session_state.backend_connected else "#F44336"
-    
-    # ✅ Add session info for debugging (optional)
-    session_info = ""
-    if st.session_state.user_session_id:
-        session_info = f" (Session: {st.session_state.user_session_id[:6]})"
-    
     st.markdown(f"""
     <style>
         .stApp {{background-color: {bg} !important; color: {text} !important;}}
@@ -97,8 +89,8 @@ def set_theme():
         div[data-testid="chat-message"] {{background: transparent !important; color: {text} !important;}}
         .stChatMessage {{background: transparent !important; color: {text} !important;}}
         #MainMenu, footer, header {{visibility: hidden;}}
-        
-        /* Engine Icon - Fixed positioning */
+
+        /* Icono de motor */
         .engine-icon {{
             position: fixed;
             top: 20px;
@@ -110,14 +102,14 @@ def set_theme():
         .engine-icon:hover {{
             opacity: 0.60;
         }}
-        
-        /* Backend status indicator - now per session */
+
+        /* Estado del backend - solo se mostrará si offline */
         .backend-status {{
             position: fixed;
             top: 20px;
             right: 20px;
             z-index: 999;
-            background: {status_color};
+            background: #F44336;
             color: white;
             padding: 5px 10px;
             border-radius: 15px;
@@ -125,50 +117,22 @@ def set_theme():
             font-weight: bold;
             opacity: 0.8;
         }}
-        
-        /* Session info indicator (optional debug info) */
-        .session-info {{
-            position: fixed;
-            top: 60px;
-            right: 20px;
-            z-index: 998;
-            background: rgba(128, 128, 128, 0.7);
-            color: white;
-            padding: 3px 8px;
-            border-radius: 10px;
-            font-size: 10px;
-            opacity: 0.6;
-        }}
-        
-        /* Background calendar - Centered-right, large, skeleton style */
-        .calendar-bg {{
-            filter: blur(0.3px);
-        }}
-        .calendar-bg:hover {{
-            filter: blur(0px);
-            opacity: 0.95 !important;
-        }}
-        
-        /* Better chat styling */
-        .stChatInput {{
-            background-color: {bg} !important;
-        }}
 
-.stChatInput textarea {
-    border: 1px solid #ccc !important;
-    box-shadow: none !important;
-    color: #fff !important;
-    background-color: #222 !important;
-}
-
+        /* Estilo del input */
+        .stChatInput textarea {{
+            border: 1px solid #ccc !important;
+            box-shadow: none !important;
+            color: #fff !important;
+            background-color: #222 !important;
+        }}
     </style>
     """, unsafe_allow_html=True)
+    
     return bg, text
-
+    
 bg, text = set_theme()
 
 # --- BACKEND STATUS INDICATOR - Now per session ---
-backend_status_text = "🟢 Connected" if st.session_state.backend_connected else "🔴 Offline"
 if not st.session_state.backend_connected:
     st.markdown('<div class="backend-status">Offline</div>', unsafe_allow_html=True)
 
