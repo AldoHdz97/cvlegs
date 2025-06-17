@@ -76,7 +76,6 @@ def initialize_user_backend():
 cv_client = initialize_user_backend()
 
 # --- THEME CONTROL ---
-
 def set_theme():
     if st.session_state.dark_mode:
         bg, text = "#000510", "#ffffff"
@@ -91,13 +90,6 @@ def set_theme():
         .stChatMessage {{background: transparent !important; color: {text} !important;}}
         #MainMenu, footer, header {{visibility: hidden;}}
 
-        .stChatInput textarea:focus {{
-            outline: none !important;
-            border: 1px solid #aaa !important;
-            box-shadow: none !important;
-            caret-color: white !important;
-        }}
-
         .stChatInput textarea {{
             border: 1px solid #555 !important;
             background-color: #222 !important;
@@ -105,6 +97,25 @@ def set_theme():
             padding-left: 0.75rem !important;
             padding-top: 0.5rem !important;
             border-radius: 1.5rem !important;
+            box-shadow: none !important;
+        }}
+
+        .stChatInput textarea:focus {{
+            outline: none !important;
+            border: 1px solid #555 !important;
+            box-shadow: none !important;
+            caret-color: white !important;
+        }}
+
+        .stChatInput textarea:hover {{
+            border: 1px solid #666 !important;
+            box-shadow: none !important;
+        }}
+
+        /* Remove any error/validation styling */
+        .stChatInput textarea:invalid {{
+            border: 1px solid #555 !important;
+            box-shadow: none !important;
         }}
 
         .engine-icon {{
@@ -126,16 +137,16 @@ def set_theme():
             z-index: 999;
             background: #F44336;
             color: white;
-            padding: 5px 10px;
-            border-radius: 15px;
+            padding: 8px 15px;
+            border-radius: 20px;
             font-size: 12px;
             font-weight: bold;
-            opacity: 0.8;
+            opacity: 0.9;
+            box-shadow: 0 2px 8px rgba(244, 67, 54, 0.3);
         }}
     </style>
-""", unsafe_allow_html=True)
+    """, unsafe_allow_html=True)
     return bg, text
-
 
 bg, text = set_theme()
 
