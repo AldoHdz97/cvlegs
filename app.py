@@ -2,7 +2,6 @@ import streamlit as st
 import time
 import logging
 from datetime import datetime, timedelta
-import hashlib
 
 # Import from our separate API client module - now with multi-user support
 from api_client import get_session_cv_client, initialize_session_backend, APIResponse
@@ -19,62 +18,20 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# --- CSS CACHE BUSTER ---
-# Generate a unique CSS version to force refresh
-css_version = hashlib.md5(str(time.time()).encode()).hexdigest()[:8]
-
-# --- DEVICE DETECTION (IMPROVED) ---
-def detect_mobile_device():
-    """More reliable mobile detection"""
-    # First, check if we already detected
-    if "device_type" not in st.session_state:
-        # Use JavaScript for immediate detection
-        detection_script = f"""
-        <script>
-        (function() {{
-            const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
-                           window.innerWidth <= 768 ||
-                           ('ontouchstart' in window) ||
-                           (navigator.maxTouchPoints > 0);
-            
-            // Store in localStorage for persistence
-            localStorage.setItem('deviceType', isMobile ? 'mobile' : 'desktop');
-            
-            // Also set a cookie for server-side detection
-            document.cookie = `deviceType=${{isMobile ? 'mobile' : 'desktop'}}; path=/; max-age=86400`;
-            
-            // Force a rerun if this is first detection
-            if (!localStorage.getItem('themeInitialized')) {{
-                localStorage.setItem('themeInitialized', 'true');
-                window.location.reload();
-            }}
-        }})();
-        </script>
-        """
-        st.markdown(detection_script, unsafe_allow_html=True)
-        
-        # Default mobile detection fallback
-        st.session_state.device_type = "desktop"  # Will be updated by JS
-    
-    return st.session_state.device_type
-
 # --- SESSION STATE INITIALIZATION ---
-# Detect device
-device_type = detect_mobile_device()
-
-# Theme initialization with device-based defaults
+# Theme with automatic device detection
 if "dark_mode" not in st.session_state:
-    # Try to get from URL params first (from JS detection)
-    if "mobile" in st.query_params:
-        st.session_state.dark_mode = False  # Light for mobile
-    elif "desktop" in st.query_params:
-        st.session_state.dark_mode = True   # Dark for desktop
+    # Check for device detection from URL params
+    if "mobile_theme" in st.query_params:
+        st.session_state.dark_mode = False  # Light mode for mobile
+    elif "desktop_theme" in st.query_params:
+        st.session_state.dark_mode = True   # Dark mode for desktop
     else:
-        # Fallback: use user agent string analysis
-        user_agent = st.context.headers.get("user-agent", "").lower()
-        is_mobile = any(mobile_indicator in user_agent for mobile_indicator in 
-                       ["mobile", "android", "iphone", "ipad", "ipod", "blackberry", "windows phone"])
-        st.session_state.dark_mode = not is_mobile  # Mobile = light, Desktop = dark
+        st.session_state.dark_mode = True   # Default to dark mode
+
+# Manual theme override tracking
+if "manual_theme" not in st.session_state:
+    st.session_state.manual_theme = False
 
 # Interview scheduling
 if "show_calendar_picker" not in st.session_state:
@@ -109,10 +66,6 @@ if "user_session_id" not in st.session_state:
 # Validation error state
 if "validation_error" not in st.session_state:
     st.session_state.validation_error = None
-
-# Manual theme override
-if "manual_theme_set" not in st.session_state:
-    st.session_state.manual_theme_set = False
 
 # --- VALIDATION FUNCTIONS ---
 def validate_message(message):
@@ -156,179 +109,84 @@ if cv_client is None:
 else:
     st.session_state.backend_connected = None
 
-# --- ROBUST THEME CONTROL WITH FORCED CSS ---
+# --- THEME CONTROL WITH CONSISTENT COLORS ---
 def set_theme():
     if st.session_state.dark_mode:
         bg, text = "#000510", "#ffffff"
-        chat_bg, chat_text = "#222", "#ffffff"
+        input_bg, input_text = "#222", "#ffffff"
         placeholder_color = "#888"
     else:
         bg, text = "#ffffff", "#222326"
-        chat_bg, chat_text = "#f8f9fa", "#222326"
+        input_bg, input_text = "#f8f9fa", "#222326"
         placeholder_color = "#666"
 
-    # NUCLEAR CSS - Forces styles on ALL browsers
     st.markdown(f"""
-    <style id="theme-css-{css_version}">
-        /* FORCE REMOVE ANY EXISTING STYLES */
-        * {{
-            box-sizing: border-box !important;
-        }}
-        
-        /* MAIN APP STYLING - FORCED */
-        .stApp,
-        .stApp > div,
-        .main,
-        .main > div,
-        section[data-testid="stAppViewContainer"],
-        div[data-testid="stAppViewContainer"],
-        .stAppViewContainer {{
+    <style>
+        /* Main app styling */
+        .stApp {{
             background-color: {bg} !important;
             color: {text} !important;
         }}
         
-        .main .block-container,
-        .block-container,
-        div[data-testid="block-container"] {{
+        .main .block-container {{
             background-color: {bg} !important;
             color: {text} !important;
         }}
         
-        /* SIDEBAR STYLING - FORCED */
-        .stSidebar,
-        section[data-testid="stSidebar"],
-        div[data-testid="stSidebar"] > div,
-        .css-1d391kg,
-        .css-1lcbmhc {{
-            background-color: {bg} !important;
-            color: {text} !important;
-        }}
-        
-        .stSidebar *,
-        section[data-testid="stSidebar"] *,
-        .stSidebar div,
-        .stSidebar p,
-        .stSidebar span,
-        .stSidebar label {{
-            color: {text} !important;
-            background-color: transparent !important;
-        }}
-        
-        /* SIDEBAR SELECTBOX FIXED */
-        .stSidebar .stSelectbox > div > div,
-        .stSidebar .stSelectbox div[data-baseweb="select"] {{
-            background-color: {chat_bg} !important;
-            color: {text} !important;
-            border: 1px solid {"#444" if st.session_state.dark_mode else "#ddd"} !important;
-        }}
-        
-        .stSidebar .stSelectbox div[data-baseweb="select"] > div {{
-            color: {text} !important;
-        }}
-        
-        /* CHAT MESSAGES - FORCED */
-        div[data-testid="chat-message"],
-        .stChatMessage,
-        .stChatMessage > div,
-        .stChatMessage div {{
+        /* Chat messages */
+        div[data-testid="chat-message"] {{
             background: transparent !important;
             color: {text} !important;
         }}
         
-        /* CHAT MESSAGE CONTENT - FORCED */
         div[data-testid="chat-message"] p,
         div[data-testid="chat-message"] div,
-        div[data-testid="chat-message"] span,
+        .stChatMessage,
         .stChatMessage p,
-        .stChatMessage div,
-        .stChatMessage span {{
+        .stChatMessage div {{
             color: {text} !important;
         }}
         
-        /* HIDE STREAMLIT ELEMENTS */
-        #MainMenu, footer, header,
-        div[data-testid="stToolbar"],
-        .stDeployButton {{
-            visibility: hidden !important;
-            display: none !important;
+        /* Hide Streamlit elements */
+        #MainMenu, footer, header {{
+            visibility: hidden;
         }}
 
-        /* NUCLEAR CHAT INPUT STYLING - FIXED FOR BOTH THEMES */
-        .stChatInput,
-        div[data-testid="stChatInput"],
-        div[data-testid="stChatInputContainer"] {{
-            background: transparent !important;
-        }}
-        
-        .stChatInput > div,
-        .stChatInput > div > div,
-        .stChatInput > div > div > div,
-        .stChatInput > div > div > div > div,
-        div[data-testid="stChatInput"] > div,
-        div[data-testid="stChatInput"] > div > div,
-        div[data-testid="stChatInput"] div[data-baseweb="input"] {{
+        /* Chat input styling - clean and consistent */
+        .stChatInput > div > div > div > div {{
+            background-color: {input_bg} !important;
             border: none !important;
-            background-color: {chat_bg} !important;
             border-radius: 1.5rem !important;
-            box-shadow: 0 2px 10px rgba(0,0,0,{"0.1" if st.session_state.dark_mode else "0.05"}) !important;
-            outline: none !important;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1) !important;
         }}
 
-        .stChatInput textarea,
-        div[data-testid="stChatInput"] textarea,
-        input[data-testid="stChatInputTextArea"],
-        textarea[data-testid="stChatInputTextArea"] {{
-            border: none !important;
+        .stChatInput textarea {{
             background-color: transparent !important;
-            color: {chat_text} !important;
-            padding: 0.75rem !important;
+            color: {input_text} !important;
+            border: none !important;
             outline: none !important;
-            box-shadow: none !important;
-            caret-color: {chat_text} !important;
-            font-size: 14px !important;
+            caret-color: {input_text} !important;
         }}
 
-        .stChatInput textarea::placeholder,
-        div[data-testid="stChatInput"] textarea::placeholder {{
+        .stChatInput textarea::placeholder {{
             color: {placeholder_color} !important;
-            opacity: 0.7 !important;
         }}
 
-        .stChatInput textarea:focus,
-        div[data-testid="stChatInput"] textarea:focus {{
+        .stChatInput textarea:focus {{
             outline: none !important;
             border: none !important;
             box-shadow: none !important;
-            color: {chat_text} !important;
         }}
 
-        /* FORCE OVERRIDE ALL POSSIBLE INPUT STATES */
+        /* Remove any red borders completely */
         .stChatInput *,
         .stChatInput *:focus,
-        .stChatInput *:hover,
-        .stChatInput *:active,
-        div[data-testid="stChatInput"] *,
-        div[data-testid="stChatInput"] *:focus {{
+        .stChatInput *:hover {{
             border: none !important;
             outline: none !important;
         }}
 
-        /* OVERRIDE BASEWEB COMPONENTS */
-        div[data-baseweb="input"],
-        div[data-baseweb="textarea"] {{
-            background-color: {chat_bg} !important;
-            border: none !important;
-            color: {chat_text} !important;
-        }}
-
-        div[data-baseweb="input"]:focus-within,
-        div[data-baseweb="textarea"]:focus-within {{
-            box-shadow: 0 2px 15px rgba(0,0,0,{"0.15" if st.session_state.dark_mode else "0.1"}) !important;
-            border: none !important;
-            background-color: {chat_bg} !important;
-        }}
-
-        /* ICONS AND STATUS */
+        /* Engine icon */
         .engine-icon {{
             position: fixed;
             top: 20px;
@@ -341,6 +199,7 @@ def set_theme():
             opacity: 0.60;
         }}
 
+        /* Backend status */
         .backend-status {{
             position: fixed;
             top: 20px;
@@ -355,6 +214,7 @@ def set_theme():
             opacity: 0.9;
         }}
 
+        /* Validation bubble */
         .validation-bubble {{
             position: fixed;
             top: 50%;
@@ -377,56 +237,30 @@ def set_theme():
             85% {{ opacity: 1; transform: translate(-50%, -50%) scale(1); }}
             100% {{ opacity: 0; transform: translate(-50%, -50%) scale(0.8); display: none; }}
         }}
-
-        /* MOBILE RESPONSIVE */
-        @media (max-width: 768px) {{
-            .validation-bubble {{
-                font-size: 13px;
-                padding: 10px 20px;
-                max-width: 90vw;
-            }}
-        }}
-        
-        /* FORCE CSS REFRESH */
-        html {{ 
-            --css-version: {css_version}; 
-        }}
     </style>
     
     <script>
-    // Force CSS application and cache busting
-    (function() {{
-        // Remove any old theme CSS
-        const oldStyles = document.querySelectorAll('[id^="theme-css-"]');
-        oldStyles.forEach(style => {{
-            if (style.id !== 'theme-css-{css_version}') {{
-                style.remove();
-            }}
-        }});
+    // Simple device detection - only runs once on first load
+    if (!localStorage.getItem('deviceDetected') && !{str(st.session_state.manual_theme).lower()}) {{
+        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || 
+                         window.innerWidth <= 768;
         
-        // Force style recalculation
-        document.body.style.display = 'none';
-        document.body.offsetHeight; // Trigger reflow
-        document.body.style.display = '';
+        localStorage.setItem('deviceDetected', 'true');
         
-        // Device detection and auto-theme (only if not manually set)
-        const manuallySet = localStorage.getItem('manualThemeSet') === 'true';
-        if (!manuallySet) {{
-            const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
-                           window.innerWidth <= 768 ||
-                           ('ontouchstart' in window);
-            
-            const currentIsDark = {str(st.session_state.dark_mode).lower()};
-            const shouldBeDark = !isMobile;
-            
-            if (currentIsDark !== shouldBeDark) {{
-                // Reload with theme parameter
-                const url = new URL(window.location);
-                url.searchParams.set(isMobile ? 'mobile' : 'desktop', '1');
-                window.location.href = url.toString();
+        // Only redirect if theme doesn't match expected
+        const currentIsDark = {str(st.session_state.dark_mode).lower()};
+        const shouldBeDark = !isMobile;
+        
+        if (currentIsDark !== shouldBeDark) {{
+            const url = new URL(window.location);
+            if (isMobile) {{
+                url.searchParams.set('mobile_theme', '1');
+            }} else {{
+                url.searchParams.set('desktop_theme', '1');
             }}
+            window.location.href = url.toString();
         }}
-    }})();
+    }}
     </script>
     """, unsafe_allow_html=True)
     
@@ -435,13 +269,13 @@ def set_theme():
 # Apply theme
 bg, text = set_theme()
 
-# Handle theme switching from URL params
-if "mobile" in st.query_params and not st.session_state.manual_theme_set:
-    if st.session_state.dark_mode:  # Should be light for mobile
+# Handle theme changes from URL parameters
+if "mobile_theme" in st.query_params and not st.session_state.manual_theme:
+    if st.session_state.dark_mode:
         st.session_state.dark_mode = False
         st.rerun()
-elif "desktop" in st.query_params and not st.session_state.manual_theme_set:
-    if not st.session_state.dark_mode:  # Should be dark for desktop
+elif "desktop_theme" in st.query_params and not st.session_state.manual_theme:
+    if not st.session_state.dark_mode:
         st.session_state.dark_mode = True
         st.rerun()
 
@@ -451,23 +285,13 @@ if st.session_state.validation_error:
     <div class="validation-bubble">
         {st.session_state.validation_error}
     </div>
-    <script>
-        setTimeout(() => {{
-            const bubble = document.querySelector('.validation-bubble');
-            if (bubble) bubble.style.display = 'none';
-        }}, 3000);
-    </script>
     """, unsafe_allow_html=True)
     
-    # Clear after display
-    if 'validation_clear_flag' not in st.session_state:
-        st.session_state.validation_clear_flag = True
-
-if st.session_state.get('validation_clear_flag'):
+    # Auto-clear after 3 seconds
+    time.sleep(0.1)
     st.session_state.validation_error = None
-    st.session_state.validation_clear_flag = None
 
-# Backend status
+# Backend status indicator
 if st.session_state.backend_connected is False:
     st.markdown('<div class="backend-status">OFFLINE</div>', unsafe_allow_html=True)
 
@@ -493,6 +317,7 @@ st.markdown(f'<div class="engine-icon">{engine_svg}</div>', unsafe_allow_html=Tr
 with st.sidebar:
     st.header("⚙️ Configuration")
     
+    # Backend status
     if st.session_state.backend_connected is False:
         st.error("Backend Offline")
         if st.button("Reconnect", key="reconnect_backend"):
@@ -501,6 +326,7 @@ with st.sidebar:
     
     st.markdown("---")
     
+    # Response Style
     st.selectbox(
         "Response Style",
         ["Detailed", "Summary", "Bullet points", "Technical", "Conversational"],
@@ -509,13 +335,11 @@ with st.sidebar:
         help="Choose how you'd like responses formatted"
     )
     
-    # Theme toggle with manual override
+    # Theme toggle
     dark_mode = st.toggle("🌙 Dark Mode", value=st.session_state.dark_mode, key="theme_toggle")
     if dark_mode != st.session_state.dark_mode:
         st.session_state.dark_mode = dark_mode
-        st.session_state.manual_theme_set = True
-        # Set manual flag in browser
-        st.markdown('<script>localStorage.setItem("manualThemeSet", "true");</script>', unsafe_allow_html=True)
+        st.session_state.manual_theme = True  # Mark as manually set
         st.rerun()
 
     st.markdown("---")
@@ -565,7 +389,7 @@ with st.sidebar:
             note = st.text_area("Leave a note:", key="note_area", height=80)
             st.session_state.user_note = note
             
-            st.info("📧 You'll receive a confirmation email after your request is reviewed.")
+            st.info("You'll receive a confirmation email after your request is reviewed.")
             
             with st.expander("📋 Review Summary", expanded=True):
                 st.write(f"**📅 Day:** {st.session_state.selected_day}")
@@ -580,7 +404,7 @@ with st.sidebar:
                     st.rerun()
             with col2:
                 if st.button("Request Interview", key="submit_int", type="primary", use_container_width=True):
-                    st.success("Interview request sent! You'll receive a confirmation email soon.")
+                    st.success("🎉 Interview request sent! You'll receive a confirmation email soon.")
                     st.session_state.show_calendar_picker = False
                     st.session_state.scheduling_step = 0
                     st.session_state.selected_day = None
