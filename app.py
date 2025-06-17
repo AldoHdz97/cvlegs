@@ -80,6 +80,7 @@ def validate_message(message):
 def show_validation_error(error_message):
     """Display validation error bubble"""
     st.session_state.validation_error = error_message
+    st.session_state.validation_error_time = time.time()
 
 # --- INITIALIZE MULTI-USER BACKEND CLIENT ---
 def get_user_cv_client():
@@ -258,14 +259,14 @@ def set_theme():
             font-weight: 500;
             z-index: 1000;
             box-shadow: 0 4px 20px rgba(244, 67, 54, 0.3);
-            animation: fadeInOut 3s ease-in-out;
+            animation: fadeInOut 3s ease-in-out forwards;
         }}
 
         @keyframes fadeInOut {{
             0% {{ opacity: 0; transform: translate(-50%, -50%) scale(0.8); }}
             15% {{ opacity: 1; transform: translate(-50%, -50%) scale(1); }}
             85% {{ opacity: 1; transform: translate(-50%, -50%) scale(1); }}
-            100% {{ opacity: 0; transform: translate(-50%, -50%) scale(0.8); }}
+            100% {{ opacity: 0; transform: translate(-50%, -50%) scale(0.8); display: none; }}
         }}
     </style>
     """, unsafe_allow_html=True)
@@ -276,18 +277,38 @@ bg, text = set_theme()
 # Display validation error bubble if present
 if st.session_state.validation_error:
     st.markdown(f"""
-    <div class="validation-bubble">
+    <div class="validation-bubble" id="validation-bubble-{int(time.time())}">
         {st.session_state.validation_error}
     </div>
+    <script>
+        setTimeout(function() {{
+            // Remove the bubble from DOM
+            const bubble = document.querySelector('.validation-bubble');
+            if (bubble) {{
+                bubble.style.display = 'none';
+            }}
+            // Clear from session state by triggering a rerun
+            window.parent.postMessage({{"type": "streamlit:setComponentValue", "value": null}}, "*");
+        }}, 3000);
+    </script>
     """, unsafe_allow_html=True)
     
-    # Clear the error after 3 seconds
-    import threading
-    def clear_validation_error():
-        time.sleep(3)
+    # Clear the validation error immediately after displaying to prevent persistence
+    import asyncio
+    async def clear_validation():
+        await asyncio.sleep(0.1)
         st.session_state.validation_error = None
     
-    threading.Thread(target=clear_validation_error, daemon=True).start()
+    # Set a flag to clear on next rerun
+    if 'clear_validation_flag' not in st.session_state:
+        st.session_state.clear_validation_flag = True
+        # Use st.rerun() after a delay to clear
+        st.markdown('<script>setTimeout(() => window.location.reload(), 3100);</script>', unsafe_allow_html=True)
+
+# Clear validation error if flag is set
+if st.session_state.get('clear_validation_flag') and st.session_state.validation_error:
+    st.session_state.validation_error = None
+    st.session_state.clear_validation_flag = None
 
 # Show backend status only when offline
 if st.session_state.backend_connected is False:
@@ -410,8 +431,8 @@ with st.sidebar:
                     st.session_state.scheduling_step = 1
                     st.rerun()
             with col2:
-                if st.button("Request Interview", key="submit_int", type="primary", use_container_width=True):
-                    st.success("Interview request sent! You'll receive a confirmation email soon.")
+                if st.button(" Request Interview", key="submit_int", type="primary", use_container_width=True):
+                    st.success("🎉 Interview request sent! You'll receive a confirmation email soon.")
                     # Reset scheduling state
                     st.session_state.show_calendar_picker = False
                     st.session_state.scheduling_step = 0
@@ -473,7 +494,7 @@ if prompt := st.chat_input("Ask! Don't be shy !", key="main_chat_input"):
         with st.chat_message("assistant"):
             if st.session_state.backend_connected is False or not cv_client:
                 # Use original fallback responses when backend is offline
-                with st.spinner("Thinking..."):
+                with st.spinner(" Thinking..."):
                     if any(word in prompt.lower() for word in ['skill', 'technology', 'programming', 'language']):
                         answer = f"Great question about skills! Based on Aldo's background, he has extensive experience with Python, SQL, Tableau, and data analysis. He's particularly strong in economics, data visualization, and building automated reporting systems. His technical skills span from web scraping to machine learning applications."
                     elif any(word in prompt.lower() for word in ['experience', 'work', 'job', 'company']):
@@ -496,7 +517,7 @@ if prompt := st.chat_input("Ask! Don't be shy !", key="main_chat_input"):
                 # Use backend for real responses
                 response_format = st.session_state.get("response_format", "Detailed")
                 
-                with st.spinner("Thinking..."):
+                with st.spinner(" Thinking..."):
                     # Make API call to backend with session-specific client
                     api_response = cv_client.query_cv(prompt, response_format)
                     
@@ -511,10 +532,10 @@ if prompt := st.chat_input("Ask! Don't be shy !", key="main_chat_input"):
                             
                     else:
                         # Handle API errors gracefully per session
-                        error_message = f"⚠ Having trouble accessing my knowledge base right now. {api_response.error or 'Please try again in a moment.'}"
+                        error_message = f" Having trouble accessing my knowledge base right now. {api_response.error or 'Please try again in a moment.'}"
                         streamed = stream_message(error_message)
                         st.session_state.messages.append({"role": "assistant", "content": streamed})
                         
                         # If it's a connection issue, suggest reconnecting
                         if "connect" in str(api_response.error).lower():
-                            st.caption("💡 Try clicking 'Reconnect' in the sidebar")
+                            st.caption(" Try clicking 'Reconnect' in the sidebar")
