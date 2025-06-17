@@ -153,6 +153,14 @@ def set_theme():
         .stChatInput {{
             background-color: {bg} !important;
         }}
+
+.stChatInput textarea {
+    border: 1px solid #ccc !important;
+    box-shadow: none !important;
+    color: #fff !important;
+    background-color: #222 !important;
+}
+
     </style>
     """, unsafe_allow_html=True)
     return bg, text
@@ -161,10 +169,8 @@ bg, text = set_theme()
 
 # --- BACKEND STATUS INDICATOR - Now per session ---
 backend_status_text = "🟢 Connected" if st.session_state.backend_connected else "🔴 Offline"
-st.markdown(
-    f'<div class="backend-status">{backend_status_text}</div>',
-    unsafe_allow_html=True
-)
+if not st.session_state.backend_connected:
+    st.markdown('<div class="backend-status">Offline</div>', unsafe_allow_html=True)
 
 # ✅ Optional: Show session info for debugging
 if st.session_state.user_session_id:
@@ -175,7 +181,7 @@ if st.session_state.user_session_id:
 
 # --- MINIMALISTIC TITLE ---
 st.markdown(
-    f"<h2 style='font-family:Roboto,sans-serif;font-weight:300;margin-bottom:8px;margin-top:8px;color:{text};text-align:center;'>hola,welcome</h2>",
+    f"<h2 style='font-family:Roboto,sans-serif;font-weight:300;margin-bottom:8px;margin-top:8px;color:{text};text-align:center;'>hola, welcome</h2>",
     unsafe_allow_html=True,
 )
 
