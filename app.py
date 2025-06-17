@@ -49,14 +49,39 @@ if "show_config" not in st.session_state:
 if "backend_connected" not in st.session_state:
     st.session_state.backend_connected = None
 
-# ✅ User session info for debugging
+# User session info for debugging
 if "user_session_id" not in st.session_state:
     st.session_state.user_session_id = None
 
-# --- INITIALIZE MULTI-USER BACKEND CLIENT ---
-# ❌ REMOVED: Global cached resources that cause multi-user issues
-# @st.cache_resource - This was causing shared state between users!
+# Validation error state
+if "validation_error" not in st.session_state:
+    st.session_state.validation_error = None
 
+# --- VALIDATION FUNCTIONS ---
+def validate_message(message):
+    """
+    Validate user message before sending to API
+    Returns: (is_valid: bool, error_message: str)
+    """
+    if not message or not message.strip():
+        return False, "Please enter a message"
+    
+    # Check minimum word count (adjust threshold as needed)
+    word_count = len(message.strip().split())
+    if word_count < 2:
+        return False, "Sorry, your message is too short. Please provide more details."
+    
+    # Check minimum character count (optional additional validation)
+    if len(message.strip()) < 5:
+        return False, "Sorry, your message is too short. Please provide more details."
+    
+    return True, ""
+
+def show_validation_error(error_message):
+    """Display validation error bubble"""
+    st.session_state.validation_error = error_message
+
+# --- INITIALIZE MULTI-USER BACKEND CLIENT ---
 def get_user_cv_client():
     """Get session-specific CV client - NO GLOBAL CACHING"""
     return get_session_cv_client()
@@ -72,8 +97,16 @@ def initialize_user_backend():
         st.session_state.backend_connected = False
         return None
 
-# ✅ Initialize per-user backend (not cached globally)
+# Initialize per-user backend (not cached globally)
 cv_client = initialize_user_backend()
+
+# Only show status indicator when there's actually a connection problem
+if cv_client is None:
+    st.session_state.backend_connected = False
+    logger.error("Backend connection failed")
+else:
+    # Remove the connected status entirely - don't set to True
+    st.session_state.backend_connected = None
 
 # --- THEME CONTROL ---
 def set_theme():
@@ -90,32 +123,55 @@ def set_theme():
         .stChatMessage {{background: transparent !important; color: {text} !important;}}
         #MainMenu, footer, header {{visibility: hidden;}}
 
-        .stChatInput textarea {{
+        /* Complete chat input styling override */
+        .stChatInput > div > div > div > div {{
             border: 1px solid #555 !important;
             background-color: #222 !important;
-            color: white !important;
-            padding-left: 0.75rem !important;
-            padding-top: 0.5rem !important;
             border-radius: 1.5rem !important;
             box-shadow: none !important;
         }}
 
+        .stChatInput textarea {{
+            border: none !important;
+            background-color: transparent !important;
+            color: white !important;
+            padding-left: 0.75rem !important;
+            padding-top: 0.5rem !important;
+            box-shadow: none !important;
+            outline: none !important;
+        }}
+
         .stChatInput textarea:focus {{
             outline: none !important;
-            border: 1px solid #555 !important;
+            border: none !important;
             box-shadow: none !important;
             caret-color: white !important;
         }}
 
-        .stChatInput textarea:hover {{
+        .stChatInput textarea:focus-visible {{
+            outline: none !important;
+            border: none !important;
+            box-shadow: none !important;
+        }}
+
+        /* Override any error states */
+        .stChatInput div[data-baseweb="input"] {{
+            border: 1px solid #555 !important;
+            box-shadow: none !important;
+        }}
+
+        .stChatInput div[data-baseweb="input"]:focus-within {{
             border: 1px solid #666 !important;
             box-shadow: none !important;
         }}
 
-        /* Remove any error/validation styling */
-        .stChatInput textarea:invalid {{
-            border: 1px solid #555 !important;
-            box-shadow: none !important;
+        /* Force remove any red borders */
+        .stChatInput *[style*="border-color: rgb(255, 75, 75)"] {{
+            border-color: #555 !important;
+        }}
+
+        .stChatInput *[style*="border-color: red"] {{
+            border-color: #555 !important;
         }}
 
         .engine-icon {{
@@ -144,25 +200,58 @@ def set_theme():
             opacity: 0.9;
             box-shadow: 0 2px 8px rgba(244, 67, 54, 0.3);
         }}
+
+        .validation-bubble {{
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(244, 67, 54, 0.95);
+            color: white;
+            padding: 12px 24px;
+            border-radius: 25px;
+            font-size: 14px;
+            font-weight: 500;
+            z-index: 1000;
+            box-shadow: 0 4px 20px rgba(244, 67, 54, 0.3);
+            animation: fadeInOut 3s ease-in-out;
+        }}
+
+        @keyframes fadeInOut {{
+            0% {{ opacity: 0; transform: translate(-50%, -50%) scale(0.8); }}
+            15% {{ opacity: 1; transform: translate(-50%, -50%) scale(1); }}
+            85% {{ opacity: 1; transform: translate(-50%, -50%) scale(1); }}
+            100% {{ opacity: 0; transform: translate(-50%, -50%) scale(0.8); }}
+        }}
     </style>
     """, unsafe_allow_html=True)
     return bg, text
 
 bg, text = set_theme()
 
-# --- BACKEND STATUS INDICATOR - Now per session ---
-backend_status_text = "🟢 Connected" if st.session_state.backend_connected else "🔴 Offline"
-st.markdown(
-    f'<div class="backend-status">{backend_status_text}</div>',
-    unsafe_allow_html=True
-)
+# Display validation error bubble if present
+if st.session_state.validation_error:
+    st.markdown(f"""
+    <div class="validation-bubble">
+        {st.session_state.validation_error}
+    </div>
+    """, unsafe_allow_html=True)
+    
+    # Clear the error after 3 seconds
+    import threading
+    def clear_validation_error():
+        time.sleep(3)
+        st.session_state.validation_error = None
+    
+    threading.Thread(target=clear_validation_error, daemon=True).start()
 
-# ✅ Optional: Show session info for debugging
-if st.session_state.user_session_id:
-    st.markdown(
-        f'<div class="session-info">Session: {st.session_state.user_session_id[:6]}</div>',
-        unsafe_allow_html=True
-    )
+# Show backend status only when offline
+if st.session_state.backend_connected is False:
+    st.markdown("""
+    <div class="backend-status">
+        OFFLINE
+    </div>
+    """, unsafe_allow_html=True)
 
 # --- MINIMALISTIC TITLE ---
 st.markdown(
@@ -190,16 +279,10 @@ st.markdown(
 with st.sidebar:
     st.header("⚙️ Configuration")
     
-    # Backend status - now per session
-    if st.session_state.backend_connected:
-        st.success("🟢 Backend Connected")
-        # ✅ Show session info
-        if st.session_state.user_session_id:
-            st.caption(f"Session: {st.session_state.user_session_id[:8]}")
-    else:
-        st.error("🔴 Backend Offline")
+    # Backend status - now per session (only show when there's an issue)
+    if st.session_state.backend_connected is False:
+        st.error(" Backend Offline")
         if st.button("🔄 Reconnect", key="reconnect_backend"):
-            # ✅ Reconnect for this specific session
             cv_client = initialize_user_backend()
             st.rerun()
     
@@ -283,8 +366,8 @@ with st.sidebar:
                     st.session_state.scheduling_step = 1
                     st.rerun()
             with col2:
-                if st.button("✅ Request Interview", key="submit_int", type="primary", use_container_width=True):
-                    st.success("🎉 Interview request sent! You'll receive a confirmation email soon.")
+                if st.button("Request Interview", key="submit_int", type="primary", use_container_width=True):
+                    st.success("Interview request sent! You'll receive a confirmation email soon.")
                     # Reset scheduling state
                     st.session_state.show_calendar_picker = False
                     st.session_state.scheduling_step = 0
@@ -310,7 +393,7 @@ def stream_message(msg, delay=0.016):
         time.sleep(delay)
     return txt
 
-# --- Uso correcto fuera de la función ---
+# --- Initial greeting ---
 if not st.session_state.greeting_streamed:
     greeting = ("Hi there! I'm Aldo*—or at least, my digital twin. "
                 "Go ahead and ask me anything about my professional life, projects, or skills. "
@@ -322,64 +405,72 @@ if not st.session_state.greeting_streamed:
     st.session_state.messages.append({"role": "assistant", "content": streamed_greeting})
     st.session_state.greeting_streamed = True
 else:
-    # Mostrar historial - now per session
+    # Show message history
     for message in st.session_state.messages:
         with st.chat_message(message["role"]):
             st.markdown(message["content"])
 
-# --- MULTI-USER BACKEND-INTEGRATED CHAT INPUT ---
+# --- CHAT INPUT WITH VALIDATION ---
 if prompt := st.chat_input("Ask! Don't be shy !", key="main_chat_input"):
-    # Add user message
-    st.session_state.messages.append({"role": "user", "content": prompt})
-    with st.chat_message("user"):
-        st.markdown(prompt)
+    # Validate the message
+    is_valid, error_message = validate_message(prompt)
     
-    # Generate assistant response
-    with st.chat_message("assistant"):
-        if not st.session_state.backend_connected or not cv_client:
-            # Use original fallback responses when backend is offline
-            with st.spinner("💭 Thinking..."):
-                if any(word in prompt.lower() for word in ['skill', 'technology', 'programming', 'language']):
-                    answer = f"Great question about skills! Based on Aldo's background, he has extensive experience with Python, SQL, Tableau, and data analysis. He's particularly strong in economics, data visualization, and building automated reporting systems. His technical skills span from web scraping to machine learning applications."
-                elif any(word in prompt.lower() for word in ['experience', 'work', 'job', 'company']):
-                    answer = f"Aldo has diverse professional experience! He's currently a Social Listening & Insights Analyst at Swarm Data and People, where he analyzes performance for multiple Tec de Monterrey campuses. Previously, he worked as a Data Analyst at Wii México and had his own content creation business. His experience spans data analysis, automation, and stakeholder engagement."
-                elif any(word in prompt.lower() for word in ['education', 'degree', 'university', 'study']):
-                    answer = f"Aldo graduated with a B.A. in Economics from Tecnológico de Monterrey (2015-2021). His academic background includes statistical analysis projects using Python and R. He's also earned certifications in Tableau Desktop, Power BI, and OpenAI development."
-                elif any(word in prompt.lower() for word in ['project', 'built', 'created', 'developed']):
-                    answer = f"Aldo has worked on fascinating projects! Some highlights include: a Business Growth Analysis dashboard tracking business density across Nuevo León municipalities, an NFL Betting Index aggregation system, and an AI-driven CV Manager using Next.js and OpenAI. His projects showcase skills in data visualization, web development, and AI integration."
-                else:
-                    answer = f"Thank you for asking about '{prompt}'. I'd be happy to help you learn more about Aldo's professional background! He's an accomplished economist and data analyst with strong technical skills in Python, data visualization, and AI applications. What specific aspect would you like to know more about?"
-                
-                # Small delay for realism
-                time.sleep(0.5)
-            
-            # Stream the response
-            streamed = stream_message(answer)
-            st.session_state.messages.append({"role": "assistant", "content": streamed})
+    if not is_valid:
+        # Show validation bubble instead of processing the message
+        show_validation_error(error_message)
+        st.rerun()  # Refresh to show the bubble
+    else:
+        # Process the valid message as normal
+        st.session_state.messages.append({"role": "user", "content": prompt})
+        with st.chat_message("user"):
+            st.markdown(prompt)
         
-        else:
-            # ✅ Use backend for real responses - now per session
-            response_format = st.session_state.get("response_format", "Detailed")
-            
-            with st.spinner("🤔 Thinking..."):
-                # ✅ Make API call to backend with session-specific client
-                api_response = cv_client.query_cv(prompt, response_format)
+        # Generate assistant response
+        with st.chat_message("assistant"):
+            if st.session_state.backend_connected is False or not cv_client:
+                # Use original fallback responses when backend is offline
+                with st.spinner("Thinking..."):
+                    if any(word in prompt.lower() for word in ['skill', 'technology', 'programming', 'language']):
+                        answer = f"Great question about skills! Based on Aldo's background, he has extensive experience with Python, SQL, Tableau, and data analysis. He's particularly strong in economics, data visualization, and building automated reporting systems. His technical skills span from web scraping to machine learning applications."
+                    elif any(word in prompt.lower() for word in ['experience', 'work', 'job', 'company']):
+                        answer = f"Aldo has diverse professional experience! He's currently a Social Listening & Insights Analyst at Swarm Data and People, where he analyzes performance for multiple Tec de Monterrey campuses. Previously, he worked as a Data Analyst at Wii México and had his own content creation business. His experience spans data analysis, automation, and stakeholder engagement."
+                    elif any(word in prompt.lower() for word in ['education', 'degree', 'university', 'study']):
+                        answer = f"Aldo graduated with a B.A. in Economics from Tecnológico de Monterrey (2015-2021). His academic background includes statistical analysis projects using Python and R. He's also earned certifications in Tableau Desktop, Power BI, and OpenAI development."
+                    elif any(word in prompt.lower() for word in ['project', 'built', 'created', 'developed']):
+                        answer = f"Aldo has worked on fascinating projects! Some highlights include: a Business Growth Analysis dashboard tracking business density across Nuevo León municipalities, an NFL Betting Index aggregation system, and an AI-driven CV Manager using Next.js and OpenAI. His projects showcase skills in data visualization, web development, and AI integration."
+                    else:
+                        answer = f"Thank you for asking about '{prompt}'. I'd be happy to help you learn more about Aldo's professional background! He's an accomplished economist and data analyst with strong technical skills in Python, data visualization, and AI applications. What specific aspect would you like to know more about?"
+                    
+                    # Small delay for realism
+                    time.sleep(0.5)
                 
-                if api_response.success:
-                    # Stream the backend response
-                    streamed = stream_message(api_response.content)
-                    st.session_state.messages.append({"role": "assistant", "content": streamed})
+                # Stream the response
+                streamed = stream_message(answer)
+                st.session_state.messages.append({"role": "assistant", "content": streamed})
+            
+            else:
+                # Use backend for real responses
+                response_format = st.session_state.get("response_format", "Detailed")
+                
+                with st.spinner("Thinking..."):
+                    # Make API call to backend with session-specific client
+                    api_response = cv_client.query_cv(prompt, response_format)
                     
-                    # ✅ Show response time if available
-                    if hasattr(api_response, 'processing_time') and api_response.processing_time:
-                        st.caption(f"⚡ Response time: {api_response.processing_time:.2f}s")
+                    if api_response.success:
+                        # Stream the backend response
+                        streamed = stream_message(api_response.content)
+                        st.session_state.messages.append({"role": "assistant", "content": streamed})
                         
-                else:
-                    # ✅ Handle API errors gracefully per session
-                    error_message = f"⚠️ Having trouble accessing my knowledge base right now. {api_response.error or 'Please try again in a moment.'}"
-                    streamed = stream_message(error_message)
-                    st.session_state.messages.append({"role": "assistant", "content": streamed})
-                    
-                    # ✅ If it's a connection issue, suggest reconnecting
-                    if "connect" in str(api_response.error).lower():
-                        st.caption("💡 Try clicking 'Reconnect' in the sidebar")
+                        # Show response time if available
+                        if hasattr(api_response, 'processing_time') and api_response.processing_time:
+                            st.caption(f" Response time: {api_response.processing_time:.2f}s")
+                            
+                    else:
+                        # Handle API errors gracefully per session
+                        error_message = f"⚠ Having trouble accessing my knowledge base right now. {api_response.error or 'Please try again in a moment.'}"
+                        streamed = stream_message(error_message)
+                        st.session_state.messages.append({"role": "assistant", "content": streamed})
+                        
+                        # If it's a connection issue, suggest reconnecting
+                        if "connect" in str(api_response.error).lower():
+                            st.caption("💡 Try clicking 'Reconnect' in the sidebar")
