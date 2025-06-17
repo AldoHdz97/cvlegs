@@ -181,7 +181,8 @@ def set_theme():
         .main,
         .main > div,
         section[data-testid="stAppViewContainer"],
-        div[data-testid="stAppViewContainer"] {{
+        div[data-testid="stAppViewContainer"],
+        .stAppViewContainer {{
             background-color: {bg} !important;
             color: {text} !important;
         }}
@@ -190,6 +191,38 @@ def set_theme():
         .block-container,
         div[data-testid="block-container"] {{
             background-color: {bg} !important;
+            color: {text} !important;
+        }}
+        
+        /* SIDEBAR STYLING - FORCED */
+        .stSidebar,
+        section[data-testid="stSidebar"],
+        div[data-testid="stSidebar"] > div,
+        .css-1d391kg,
+        .css-1lcbmhc {{
+            background-color: {bg} !important;
+            color: {text} !important;
+        }}
+        
+        .stSidebar *,
+        section[data-testid="stSidebar"] *,
+        .stSidebar div,
+        .stSidebar p,
+        .stSidebar span,
+        .stSidebar label {{
+            color: {text} !important;
+            background-color: transparent !important;
+        }}
+        
+        /* SIDEBAR SELECTBOX FIXED */
+        .stSidebar .stSelectbox > div > div,
+        .stSidebar .stSelectbox div[data-baseweb="select"] {{
+            background-color: {chat_bg} !important;
+            color: {text} !important;
+            border: 1px solid {"#444" if st.session_state.dark_mode else "#ddd"} !important;
+        }}
+        
+        .stSidebar .stSelectbox div[data-baseweb="select"] > div {{
             color: {text} !important;
         }}
         
@@ -220,7 +253,7 @@ def set_theme():
             display: none !important;
         }}
 
-        /* NUCLEAR CHAT INPUT STYLING - WORKS ON ALL BROWSERS */
+        /* NUCLEAR CHAT INPUT STYLING - FIXED FOR BOTH THEMES */
         .stChatInput,
         div[data-testid="stChatInput"],
         div[data-testid="stChatInputContainer"] {{
@@ -232,11 +265,12 @@ def set_theme():
         .stChatInput > div > div > div,
         .stChatInput > div > div > div > div,
         div[data-testid="stChatInput"] > div,
-        div[data-testid="stChatInput"] > div > div {{
+        div[data-testid="stChatInput"] > div > div,
+        div[data-testid="stChatInput"] div[data-baseweb="input"] {{
             border: none !important;
             background-color: {chat_bg} !important;
             border-radius: 1.5rem !important;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1) !important;
+            box-shadow: 0 2px 10px rgba(0,0,0,{"0.1" if st.session_state.dark_mode else "0.05"}) !important;
             outline: none !important;
         }}
 
@@ -265,6 +299,7 @@ def set_theme():
             outline: none !important;
             border: none !important;
             box-shadow: none !important;
+            color: {chat_text} !important;
         }}
 
         /* FORCE OVERRIDE ALL POSSIBLE INPUT STATES */
@@ -288,22 +323,9 @@ def set_theme():
 
         div[data-baseweb="input"]:focus-within,
         div[data-baseweb="textarea"]:focus-within {{
-            box-shadow: 0 2px 15px rgba(0,0,0,0.15) !important;
+            box-shadow: 0 2px 15px rgba(0,0,0,{"0.15" if st.session_state.dark_mode else "0.1"}) !important;
             border: none !important;
-        }}
-
-        /* SIDEBAR STYLING */
-        .stSidebar,
-        section[data-testid="stSidebar"] {{
-            background-color: {bg} !important;
-        }}
-        
-        .stSidebar .stSelectbox,
-        .stSidebar .stToggle,
-        .stSidebar div,
-        .stSidebar p,
-        .stSidebar span {{
-            color: {text} !important;
+            background-color: {chat_bg} !important;
         }}
 
         /* ICONS AND STATUS */
@@ -539,11 +561,11 @@ with st.sidebar:
                     st.rerun()
         
         elif st.session_state.scheduling_step == 2:
-            st.markdown("##### 📝 Step 3: Add your mail and contact information (optional) ")
+            st.markdown("##### 📝 Step 3: Add your mail and contact info (optional)")
             note = st.text_area("Leave a note:", key="note_area", height=80)
             st.session_state.user_note = note
             
-            st.info("You'll receive a confirmation email after your request is reviewed.")
+            st.info("📧 You'll receive a confirmation email after your request is reviewed.")
             
             with st.expander("📋 Review Summary", expanded=True):
                 st.write(f"**📅 Day:** {st.session_state.selected_day}")
@@ -558,7 +580,7 @@ with st.sidebar:
                     st.rerun()
             with col2:
                 if st.button("Request Interview", key="submit_int", type="primary", use_container_width=True):
-                    st.success("🎉 Interview request sent! You'll receive a confirmation email soon.")
+                    st.success("Interview request sent! You'll receive a confirmation email soon.")
                     st.session_state.show_calendar_picker = False
                     st.session_state.scheduling_step = 0
                     st.session_state.selected_day = None
@@ -612,7 +634,7 @@ if prompt := st.chat_input("Ask! Don't be shy !", key="main_chat_input"):
         
         with st.chat_message("assistant"):
             if st.session_state.backend_connected is False or not cv_client:
-                with st.spinner("Thinking..."):
+                with st.spinner("..."):
                     if any(word in prompt.lower() for word in ['skill', 'technology', 'programming', 'language']):
                         answer = "Great question about skills! Based on Aldo's background, he has extensive experience with Python, SQL, Tableau, and data analysis. He's particularly strong in economics, data visualization, and building automated reporting systems. His technical skills span from web scraping to machine learning applications."
                     elif any(word in prompt.lower() for word in ['experience', 'work', 'job', 'company']):
@@ -632,7 +654,7 @@ if prompt := st.chat_input("Ask! Don't be shy !", key="main_chat_input"):
             else:
                 response_format = st.session_state.get("response_format", "Detailed")
                 
-                with st.spinner("Thinking..."):
+                with st.spinner("..."):
                     api_response = cv_client.query_cv(prompt, response_format)
                     
                     if api_response.success:
