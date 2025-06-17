@@ -18,8 +18,40 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
+# --- DEVICE DETECTION AND THEME INITIALIZATION ---
+def detect_device_and_set_theme():
+    """Detect device type and set appropriate theme"""
+    if "theme_initialized" not in st.session_state:
+        # JavaScript to detect device type
+        device_detection_script = """
+        <script>
+        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth <= 768;
+        const theme = isMobile ? false : true; // false = light mode, true = dark mode
+        
+        // Store in session storage temporarily
+        sessionStorage.setItem('detectedTheme', theme);
+        
+        // Send message to Streamlit
+        window.parent.postMessage({
+            type: 'streamlit:setComponentValue',
+            value: {theme: theme, mobile: isMobile}
+        }, '*');
+        </script>
+        """
+        
+        st.markdown(device_detection_script, unsafe_allow_html=True)
+        
+        # Default initialization - will be overridden by device detection
+        if "dark_mode" not in st.session_state:
+            st.session_state.dark_mode = True  # Default to dark, will change based on device
+            
+        st.session_state.theme_initialized = True
+
+# Initialize device detection
+detect_device_and_set_theme()
+
 # --- SESSION STATE INITIALIZATION ---
-# Theme
+# Theme (will be set by device detection)
 if "dark_mode" not in st.session_state:
     st.session_state.dark_mode = True
 
@@ -109,12 +141,16 @@ else:
     # Remove the connected status entirely - don't set to True
     st.session_state.backend_connected = None
 
-# --- THEME CONTROL ---
+# --- THEME CONTROL WITH DEVICE-RESPONSIVE STYLING ---
 def set_theme():
     if st.session_state.dark_mode:
         bg, text = "#000510", "#ffffff"
+        chat_bg, chat_border = "#222", "transparent"
+        chat_text = "#ffffff"
     else:
         bg, text = "#ffffff", "#222326"
+        chat_bg, chat_border = "#f8f9fa", "transparent" 
+        chat_text = "#222326"
 
     st.markdown(f"""
     <style>
@@ -124,7 +160,7 @@ def set_theme():
         .stChatMessage {{background: transparent !important; color: {text} !important;}}
         #MainMenu, footer, header {{visibility: hidden;}}
 
-        /* NUCLEAR APPROACH - Override ALL possible border sources */
+        /* RESPONSIVE CHAT INPUT - ADAPTS TO THEME */
         .stChatInput, 
         .stChatInput *, 
         .stChatInput *:focus, 
@@ -137,12 +173,12 @@ def set_theme():
             box-shadow: none !important;
         }}
 
-        /* Target the actual input container - REMOVE ALL BORDERS */
+        /* Target the actual input container - THEME RESPONSIVE */
         .stChatInput > div {{
             border: none !important;
             border-radius: 1.5rem !important;
-            background-color: #222 !important;
-            box-shadow: none !important;
+            background-color: {chat_bg} !important;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1) !important;
         }}
 
         .stChatInput > div > div {{
@@ -160,16 +196,20 @@ def set_theme():
             background-color: transparent !important;
         }}
 
-        /* The textarea itself */
+        /* The textarea itself - THEME RESPONSIVE */
         .stChatInput textarea {{
             border: none !important;
             background-color: transparent !important;
-            color: white !important;
+            color: {chat_text} !important;
             padding-left: 0.75rem !important;
             padding-top: 0.5rem !important;
             outline: none !important;
             box-shadow: none !important;
-            caret-color: white !important;
+            caret-color: {chat_text} !important;
+        }}
+
+        .stChatInput textarea::placeholder {{
+            color: {"#888" if st.session_state.dark_mode else "#666"} !important;
         }}
 
         /* Force override any dynamic styles that Streamlit adds */
@@ -182,11 +222,13 @@ def set_theme():
         div[data-baseweb="input"] {{
             border: none !important;
             box-shadow: none !important;
+            background-color: {chat_bg} !important;
         }}
 
         div[data-baseweb="input"]:focus-within {{
             border: none !important;
-            box-shadow: none !important;
+            box-shadow: 0 2px 15px rgba(0,0,0,0.15) !important;
+            background-color: {chat_bg} !important;
         }}
 
         /* Override any error states */
@@ -260,7 +302,48 @@ def set_theme():
             85% {{ opacity: 1; transform: translate(-50%, -50%) scale(1); }}
             100% {{ opacity: 0; transform: translate(-50%, -50%) scale(0.8); display: none; }}
         }}
+
+        /* Mobile responsive adjustments */
+        @media (max-width: 768px) {{
+            .stChatInput {{
+                margin-bottom: 10px;
+            }}
+            
+            .stChatInput > div {{
+                padding: 2px;
+            }}
+            
+            .validation-bubble {{
+                font-size: 13px;
+                padding: 10px 20px;
+                max-width: 90vw;
+                text-align: center;
+            }}
+        }}
+
+        /* Device-specific theme detection script */
+        .theme-detector {{
+            display: none;
+        }}
     </style>
+    
+    <script>
+    // Auto-detect theme based on device if not manually set
+    if (!sessionStorage.getItem('manualThemeSet')) {{
+        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth <= 768;
+        const shouldBeDark = !isMobile; // Mobile = light, Desktop = dark
+        
+        // Only change if current theme doesn't match expected
+        const currentTheme = {str(st.session_state.dark_mode).lower()};
+        if (shouldBeDark !== currentTheme) {{
+            // Trigger theme change
+            window.parent.postMessage({{
+                type: 'streamlit:themeChange',
+                value: shouldBeDark
+            }}, '*');
+        }}
+    }}
+    </script>
     """, unsafe_allow_html=True)
     return bg, text
 
@@ -279,23 +362,13 @@ if st.session_state.validation_error:
             if (bubble) {{
                 bubble.style.display = 'none';
             }}
-            // Clear from session state by triggering a rerun
-            window.parent.postMessage({{"type": "streamlit:setComponentValue", "value": null}}, "*");
         }}, 3000);
     </script>
     """, unsafe_allow_html=True)
     
     # Clear the validation error immediately after displaying to prevent persistence
-    import asyncio
-    async def clear_validation():
-        await asyncio.sleep(0.1)
-        st.session_state.validation_error = None
-    
-    # Set a flag to clear on next rerun
     if 'clear_validation_flag' not in st.session_state:
         st.session_state.clear_validation_flag = True
-        # Use st.rerun() after a delay to clear
-        st.markdown('<script>setTimeout(() => window.location.reload(), 3100);</script>', unsafe_allow_html=True)
 
 # Clear validation error if flag is set
 if st.session_state.get('clear_validation_flag') and st.session_state.validation_error:
@@ -338,7 +411,7 @@ with st.sidebar:
     
     # Backend status - now per session (only show when there's an issue)
     if st.session_state.backend_connected is False:
-        st.error("🔴 Backend Offline")
+        st.error(" Backend Offline")
         if st.button("🔄 Reconnect", key="reconnect_backend"):
             cv_client = initialize_user_backend()
             st.rerun()
@@ -354,10 +427,12 @@ with st.sidebar:
         help="Choose how you'd like responses formatted"
     )
     
-    # Dark/Light mode toggle
+    # Dark/Light mode toggle - with manual override detection
     dark_mode = st.toggle("🌙 Dark Mode", value=st.session_state.dark_mode, key="theme_toggle")
     if dark_mode != st.session_state.dark_mode:
         st.session_state.dark_mode = dark_mode
+        # Mark as manually set to prevent auto-detection override
+        st.markdown('<script>sessionStorage.setItem("manualThemeSet", "true");</script>', unsafe_allow_html=True)
         st.rerun()
 
     st.markdown("---")
@@ -404,7 +479,7 @@ with st.sidebar:
                     st.rerun()
         
         elif st.session_state.scheduling_step == 2:
-            st.markdown("##### 📝 Step 3: Add a note (optional)")
+            st.markdown("##### 📝 Step 3: Share your mail and contact info (optional)")
             note = st.text_area("Leave a note:", key="note_area", height=80)
             st.session_state.user_note = note
             
@@ -423,7 +498,7 @@ with st.sidebar:
                     st.session_state.scheduling_step = 1
                     st.rerun()
             with col2:
-                if st.button("✅ Request Interview", key="submit_int", type="primary", use_container_width=True):
+                if st.button(" Request Interview", key="submit_int", type="primary", use_container_width=True):
                     st.success("🎉 Interview request sent! You'll receive a confirmation email soon.")
                     # Reset scheduling state
                     st.session_state.show_calendar_picker = False
@@ -486,7 +561,7 @@ if prompt := st.chat_input("Ask! Don't be shy !", key="main_chat_input"):
         with st.chat_message("assistant"):
             if st.session_state.backend_connected is False or not cv_client:
                 # Use original fallback responses when backend is offline
-                with st.spinner("💭 Thinking..."):
+                with st.spinner(" Thinking..."):
                     if any(word in prompt.lower() for word in ['skill', 'technology', 'programming', 'language']):
                         answer = f"Great question about skills! Based on Aldo's background, he has extensive experience with Python, SQL, Tableau, and data analysis. He's particularly strong in economics, data visualization, and building automated reporting systems. His technical skills span from web scraping to machine learning applications."
                     elif any(word in prompt.lower() for word in ['experience', 'work', 'job', 'company']):
@@ -509,7 +584,7 @@ if prompt := st.chat_input("Ask! Don't be shy !", key="main_chat_input"):
                 # Use backend for real responses
                 response_format = st.session_state.get("response_format", "Detailed")
                 
-                with st.spinner("🤔 Thinking..."):
+                with st.spinner(" Thinking..."):
                     # Make API call to backend with session-specific client
                     api_response = cv_client.query_cv(prompt, response_format)
                     
@@ -520,14 +595,14 @@ if prompt := st.chat_input("Ask! Don't be shy !", key="main_chat_input"):
                         
                         # Show response time if available
                         if hasattr(api_response, 'processing_time') and api_response.processing_time:
-                            st.caption(f"⚡ Response time: {api_response.processing_time:.2f}s")
+                            st.caption(f" Response time: {api_response.processing_time:.2f}s")
                             
                     else:
                         # Handle API errors gracefully per session
-                        error_message = f"⚠️ Having trouble accessing my knowledge base right now. {api_response.error or 'Please try again in a moment.'}"
+                        error_message = f" Having trouble accessing my knowledge base right now. {api_response.error or 'Please try again in a moment.'}"
                         streamed = stream_message(error_message)
                         st.session_state.messages.append({"role": "assistant", "content": streamed})
                         
                         # If it's a connection issue, suggest reconnecting
                         if "connect" in str(api_response.error).lower():
-                            st.caption("💡 Try clicking 'Reconnect' in the sidebar")
+                            st.caption(" Try clicking 'Reconnect' in the sidebar")
