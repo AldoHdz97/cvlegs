@@ -124,7 +124,6 @@ def set_theme():
         button_bg = "#2a2a2a"
         button_text = "#ffffff"
         hover_bg = "#333"
-        background = bg
     else:
         # Light theme colors
         bg, text = "#ffffff", "#222326"
@@ -136,9 +135,8 @@ def set_theme():
         button_bg = "#f0f0f0"
         button_text = "#222326"
         hover_bg = "#f5f5f5"
-        background = bg
 
-    # Comprehensive CSS with complete coverage - ONLY FIXED SIDEBAR BUTTON
+    # Comprehensive CSS with complete coverage
     css_content = f"""
     <style id="main-theme-{st.session_state.css_version}">
         /* Force cache busting */
@@ -420,26 +418,13 @@ def set_theme():
         
         /* === HIDE STREAMLIT ELEMENTS === */
         #MainMenu, footer, header,
+        div[data-testid="stToolbar"],
         .stDeployButton,
         div[data-testid="stDecoration"],
         .stSpinner,
         div[data-testid="stSpinner"] {{
             visibility: hidden !important;
             display: none !important;
-        }}
-        
-        /* === SIDEBAR BUTTON FIX === */
-        /* Force sidebar toggle button to be visible */
-        button[data-testid="collapsedControl"],
-        button[kind="header"],
-        button[data-testid="stSidebarNav"],
-        .stApp > header button,
-        .stApp header button {{
-            display: block !important;
-            visibility: visible !important;
-            opacity: 1 !important;
-            position: relative !important;
-            z-index: 9999 !important;
         }}
         
         /* === CUSTOM COMPONENTS === */
@@ -552,13 +537,9 @@ def set_theme():
             }}
         }}
         
-        /* === SPECIFIC ELEMENT OVERRIDES === */
-        /* Apply theme colors to specific elements instead of catch-all */
-        .stMarkdown, .stText, .stCaption,
-        div[data-testid="column"],
-        div[data-testid="stHorizontalBlock"],
-        div[data-testid="stVerticalBlock"],
-        div[data-testid="stExpander"] {{
+        /* === FORCE OVERRIDE ANY REMAINING ELEMENTS === */
+        /* Catch-all for any missed elements */
+        [data-testid] {{
             background-color: {bg} !important;
             color: {text} !important;
         }}
@@ -568,64 +549,6 @@ def set_theme():
         div[data-testid="stChatInput"] [data-testid] {{
             background-color: {input_bg} !important;
         }}
-
-        /* FIXED: Toggle switch styling with proper variables */
-        .stToggle > div > div, div[role="switch"] {{
-            background-color: {border_color} !important;
-            border: 1px solid {border_color} !important;
-            border-radius: 12px !important;
-            width: 44px !important;
-            height: 24px !important;
-            position: relative !important;
-            transition: all 0.3s ease !important;
-        }}
-
-        .stToggle > div > div[aria-checked="true"], div[role="switch"][aria-checked="true"] {{
-            background-color: {text} !important;
-            border-color: {text} !important;
-        }}
-
-        .stToggle > div > div::before, div[role="switch"]::before {{
-            content: '' !important;
-            position: absolute !important;
-            top: 2px !important;
-            left: 2px !important;
-            width: 16px !important;
-            height: 16px !important;
-            background-color: {bg} !important;
-            border-radius: 50% !important;
-            transition: all 0.3s ease !important;
-            box-shadow: none !important;
-        }}
-
-        .stToggle > div > div[aria-checked="true"]::before, div[role="switch"][aria-checked="true"]::before {{
-            left: 22px !important;
-            background-color: {bg} !important;
-        }}
-
-        /* FIXED: Chat input styling with proper variables */
-        .stChatInput > div, .stChatInput > div > div, div[data-testid="stChatInput"] > div, div[data-baseweb="input"] {{
-            border: 2px solid {border_color} !important;
-            border-radius: 24px !important;
-            transition: border-color 0.2s ease !important;
-            box-shadow: none !important;
-        }}
-
-        .stChatInput > div:focus-within, div[data-testid="stChatInput"] > div:focus-within, div[data-baseweb="input"]:focus-within {{
-            border-color: {text} !important;
-            box-shadow: none !important;
-        }}
-
-        .stChatInput, .stChatInput *, .stToggle, .stToggle * {{
-            -webkit-font-smoothing: antialiased !important;
-            transform: translateZ(0) !important;
-            background-clip: padding-box !important;
-        }}
-
-        .stChatInput::before, .stChatInput::after, div[data-testid="stChatInput"]::before, div[data-testid="stChatInput"]::after {{
-            display: none !important;
-        }}
-  
     </style>
     
     <script>
