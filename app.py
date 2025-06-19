@@ -431,6 +431,95 @@ def set_theme():
             display: none !important;
         }}
         
+        /* === SIDEBAR CONTROL BUTTON - ENSURE VISIBILITY === */
+        /* Make sure the sidebar toggle button is always visible and properly styled */
+        button[data-testid="collapsedControl"],
+        div[data-testid="collapsedControl"],
+        .stSidebar button[data-testid="collapsedControl"],
+        section[data-testid="stSidebar"] button[data-testid="collapsedControl"] {{
+            display: block !important;
+            visibility: visible !important;
+            opacity: 1 !important;
+            position: fixed !important;
+            top: 1rem !important;
+            left: 1rem !important;
+            z-index: 999999 !important;
+            background-color: {button_bg} !important;
+            color: {text} !important;
+            border: 1px solid {border_color} !important;
+            border-radius: 4px !important;
+            padding: 8px 12px !important;
+            cursor: pointer !important;
+            font-size: 16px !important;
+            line-height: 1 !important;
+            min-width: auto !important;
+            min-height: auto !important;
+            width: auto !important;
+            height: auto !important;
+            transform: none !important;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1) !important;
+        }}
+        
+        /* Hover state for sidebar button */
+        button[data-testid="collapsedControl"]:hover,
+        div[data-testid="collapsedControl"]:hover {{
+            background-color: {hover_bg} !important;
+            border-color: {text} !important;
+        }}
+        
+        /* When sidebar is expanded, move button to the right */
+        .stSidebar:not([aria-expanded="false"]) + div button[data-testid="collapsedControl"],
+        section[data-testid="stSidebar"]:not([aria-expanded="false"]) + div button[data-testid="collapsedControl"] {{
+            left: 21rem !important;
+        }}
+        
+        /* Alternative selectors for sidebar control */
+        [data-testid*="collapse"],
+        [data-testid*="Collapse"],
+        [data-testid*="sidebar"] button,
+        button[aria-label*="sidebar"],
+        button[aria-label*="Sidebar"] {{
+            display: block !important;
+            visibility: visible !important;
+            opacity: 1 !important;
+            z-index: 999999 !important;
+        }}
+        
+        /* Force override for any button that might be the sidebar control */
+        button[title*="sidebar"],
+        button[title*="Sidebar"],
+        button[aria-label*="navigation"] {{
+            display: block !important;
+            visibility: visible !important;
+            opacity: 1 !important;
+            background-color: {button_bg} !important;
+            color: {text} !important;
+            border: 1px solid {border_color} !important;
+            position: relative !important;
+            z-index: 999999 !important;
+        }}
+        
+        /* Ensure no other styles are hiding control buttons */
+        .stApp > div > div > div > div > button,
+        .stApp > header button,
+        .stApp button[data-baseweb="button"] {{
+            display: block !important;
+            visibility: visible !important;
+        }}
+        
+        /* Special handling for the sidebar when collapsed */
+        section[data-testid="stSidebar"][aria-expanded="false"] {{
+            width: 0 !important;
+            min-width: 0 !important;
+        }}
+        
+        /* Ensure sidebar content is properly styled when visible */
+        section[data-testid="stSidebar"][aria-expanded="true"] {{
+            width: 21rem !important;
+            min-width: 21rem !important;
+            background-color: {sidebar_bg} !important;
+        }}
+        
         /* === CUSTOM COMPONENTS === */
         /* Engine icon */
         .engine-icon {{
@@ -539,6 +628,14 @@ def set_theme():
                 padding-left: 1rem !important;
                 padding-right: 1rem !important;
             }}
+            
+            /* Mobile sidebar button positioning */
+            button[data-testid="collapsedControl"] {{
+                top: 0.5rem !important;
+                left: 0.5rem !important;
+                padding: 6px 10px !important;
+                font-size: 14px !important;
+            }}
         }}
         
         /* === FORCE OVERRIDE ANY REMAINING ELEMENTS === */
@@ -609,12 +706,6 @@ def set_theme():
 
         .stChatInput::before, .stChatInput::after, div[data-testid="stChatInput"]::before, div[data-testid="stChatInput"]::after {{
             display: none !important;
-        }}
-
-        button[data-testid="collapsedControl"], div[data-testid="collapsedControl"] {{
-            display: block !important;
-            visibility: visible !important;
-            opacity: 1 !important;
         }}
   
     </style>
