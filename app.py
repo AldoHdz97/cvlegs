@@ -124,8 +124,7 @@ def set_theme():
         button_bg = "#2a2a2a"
         button_text = "#ffffff"
         hover_bg = "#333"
-        # Fix: Define the missing background variable
-        background = bg  # This was causing the error
+        background = bg
     else:
         # Light theme colors
         bg, text = "#ffffff", "#222326"
@@ -137,14 +136,11 @@ def set_theme():
         button_bg = "#f0f0f0"
         button_text = "#222326"
         hover_bg = "#f5f5f5"
-        # Fix: Define the missing background variable
-        background = bg  # This was causing the error
+        background = bg
 
-    # Comprehensive CSS with complete coverage - FIXED CSS VARIABLES
+    # Clean, minimal CSS focused on functionality
     css_content = f"""
     <style id="main-theme-{st.session_state.css_version}">
-        /* Force cache busting */
-        meta[http-equiv="Cache-Control"] {{ content: "no-cache, no-store, must-revalidate"; }}
         
         /* === CORE APP STRUCTURE === */
         html, body, #root, 
@@ -165,8 +161,7 @@ def set_theme():
             padding-bottom: 2rem !important;
         }}
         
-        /* === COMPREHENSIVE ELEMENT COVERAGE === */
-        /* All text elements */
+        /* === TEXT ELEMENTS === */
         p, span, div, h1, h2, h3, h4, h5, h6, 
         .stMarkdown, .stMarkdown *, 
         .stText, .stText *,
@@ -178,17 +173,7 @@ def set_theme():
             color: {text} !important;
         }}
         
-        /* All container elements */
-        .stContainer, .stColumn, .stColumns,
-        div[data-testid="column"],
-        div[data-testid="stHorizontalBlock"],
-        div[data-testid="stVerticalBlock"] {{
-            background-color: {bg} !important;
-            color: {text} !important;
-        }}
-        
-        /* === CHAT SYSTEM - CLEAN AND CONSISTENT === */
-        /* Chat messages container */
+        /* === CHAT SYSTEM === */
         div[data-testid="chat-message"],
         .stChatMessage {{
             background: transparent !important;
@@ -201,7 +186,6 @@ def set_theme():
             box-shadow: none !important;
         }}
         
-        /* Avatar styling - remove all backgrounds */
         div[data-testid="chat-message"] > div:first-child,
         .stChatMessage > div:first-child,
         div[data-testid="chat-message"] img,
@@ -219,7 +203,6 @@ def set_theme():
             box-shadow: none !important;
         }}
         
-        /* Chat message content */
         div[data-testid="chat-message"] > div:last-child,
         .stChatMessage > div:last-child {{
             flex: 1 !important;
@@ -237,14 +220,12 @@ def set_theme():
             background: transparent !important;
         }}
         
-        /* === CHAT INPUT - FIXED SEMICIRCLE ISSUE === */
-        /* Main chat input container */
+        /* === CHAT INPUT === */
         .stChatInput,
         div[data-testid="stChatInput"] {{
             background: transparent !important;
         }}
         
-        /* All nested input containers - this fixes the semicircle */
         .stChatInput > div,
         .stChatInput > div > div,
         .stChatInput > div > div > div,
@@ -256,14 +237,13 @@ def set_theme():
         div[data-baseweb="input"] > div,
         div[data-baseweb="input"] > div > div {{
             background: {input_bg} !important;
-            border: 1px solid {border_color} !important;
-            border-radius: 1.5rem !important;
+            border: 2px solid {border_color} !important;
+            border-radius: 24px !important;
             transition: border-color 0.2s ease !important;
             box-shadow: none !important;
             outline: none !important;
         }}
         
-        /* Focus states */
         .stChatInput > div:focus-within,
         .stChatInput > div > div:focus-within,
         .stChatInput > div > div > div:focus-within,
@@ -274,7 +254,6 @@ def set_theme():
             box-shadow: none !important;
         }}
         
-        /* Textarea itself */
         .stChatInput textarea,
         div[data-testid="stChatInput"] textarea,
         textarea[data-testid="stChatInput"] {{
@@ -285,31 +264,17 @@ def set_theme():
             padding: 0.75rem 1rem !important;
             font-size: 14px !important;
             caret-color: {chat_text} !important;
-            border-radius: 1.5rem !important;
+            border-radius: 24px !important;
             resize: none !important;
         }}
         
-        /* Placeholder text */
         .stChatInput textarea::placeholder,
         div[data-testid="stChatInput"] textarea::placeholder {{
             color: {placeholder_color} !important;
             opacity: 0.7 !important;
         }}
         
-        /* Remove all focus outlines and validation styling */
-        .stChatInput *,
-        .stChatInput *:focus,
-        .stChatInput *:hover,
-        .stChatInput *:active,
-        .stChatInput *:invalid,
-        div[data-testid="stChatInput"] *,
-        div[data-testid="stChatInput"] *:focus,
-        div[data-testid="stChatInput"] *:hover {{
-            outline: none !important;
-            box-shadow: none !important;
-        }}
-        
-        /* === SIDEBAR - COMPLETE COVERAGE === */
+        /* === SIDEBAR === */
         .stSidebar,
         section[data-testid="stSidebar"],
         .stSidebar > div,
@@ -319,25 +284,12 @@ def set_theme():
             color: {text} !important;
         }}
         
-        /* All sidebar elements */
         .stSidebar *,
-        section[data-testid="stSidebar"] *,
-        .stSidebar div,
-        .stSidebar p,
-        .stSidebar span,
-        .stSidebar label,
-        .stSidebar h1,
-        .stSidebar h2,
-        .stSidebar h3,
-        .stSidebar h4,
-        .stSidebar h5,
-        .stSidebar h6 {{
+        section[data-testid="stSidebar"] * {{
             color: {text} !important;
-            background-color: transparent !important;
         }}
         
         /* === FORM CONTROLS === */
-        /* Selectbox */
         .stSelectbox,
         .stSelectbox > div,
         .stSelectbox > div > div,
@@ -348,13 +300,11 @@ def set_theme():
             border-radius: 0.5rem !important;
         }}
         
-        /* Toggle switch */
         .stToggle,
         .stCheckbox {{
             color: {text} !important;
         }}
         
-        /* Buttons */
         .stButton button,
         button[data-testid="stButton"],
         .stButton > button {{
@@ -370,7 +320,6 @@ def set_theme():
             background-color: {hover_bg} !important;
         }}
         
-        /* Text input and text area */
         .stTextInput input,
         .stTextArea textarea,
         input[data-testid="stTextInput"],
@@ -381,152 +330,66 @@ def set_theme():
             border-radius: 0.5rem !important;
         }}
         
-        /* === STATUS AND INFO ELEMENTS === */
-        .stSuccess {{
-            background-color: rgba(0, 255, 0, 0.1) !important;
-            color: {text} !important;
-            border: 1px solid rgba(0, 255, 0, 0.3) !important;
-        }}
-        
-        .stError {{
-            background-color: rgba(255, 0, 0, 0.1) !important;
-            color: {text} !important;
-            border: 1px solid rgba(255, 0, 0, 0.3) !important;
-        }}
-        
-        .stInfo {{
-            background-color: rgba(0, 100, 255, 0.1) !important;
-            color: {text} !important;
-            border: 1px solid rgba(0, 100, 255, 0.3) !important;
-        }}
-        
-        .stWarning {{
-            background-color: rgba(255, 165, 0, 0.1) !important;
-            color: {text} !important;
-            border: 1px solid rgba(255, 165, 0, 0.3) !important;
-        }}
-        
-        /* Expander */
-        .stExpander,
-        div[data-testid="stExpander"] {{
-            background-color: {bg} !important;
+        /* === TOGGLE SWITCH === */
+        .stToggle > div > div, div[role="switch"] {{
+            background-color: {border_color} !important;
             border: 1px solid {border_color} !important;
-            border-radius: 0.5rem !important;
+            border-radius: 12px !important;
+            width: 44px !important;
+            height: 24px !important;
+            position: relative !important;
+            transition: all 0.3s ease !important;
         }}
-        
-        .stExpander summary,
-        div[data-testid="stExpander"] summary {{
+
+        .stToggle > div > div[aria-checked="true"], div[role="switch"][aria-checked="true"] {{
+            background-color: {text} !important;
+            border-color: {text} !important;
+        }}
+
+        .stToggle > div > div::before, div[role="switch"]::before {{
+            content: '' !important;
+            position: absolute !important;
+            top: 2px !important;
+            left: 2px !important;
+            width: 16px !important;
+            height: 16px !important;
             background-color: {bg} !important;
-            color: {text} !important;
+            border-radius: 50% !important;
+            transition: all 0.3s ease !important;
+            box-shadow: none !important;
+        }}
+
+        .stToggle > div > div[aria-checked="true"]::before, div[role="switch"][aria-checked="true"]::before {{
+            left: 22px !important;
+            background-color: {bg} !important;
         }}
         
         /* === HIDE STREAMLIT ELEMENTS === */
         #MainMenu, footer, header,
         div[data-testid="stToolbar"],
         .stDeployButton,
-        div[data-testid="stDecoration"],
-        .stSpinner,
-        div[data-testid="stSpinner"] {{
+        div[data-testid="stDecoration"] {{
             visibility: hidden !important;
             display: none !important;
         }}
         
-        /* === SIDEBAR CONTROL BUTTON - ENSURE VISIBILITY === */
-        /* Make sure the sidebar toggle button is always visible and properly styled */
-        button[data-testid="collapsedControl"],
-        div[data-testid="collapsedControl"],
-        .stSidebar button[data-testid="collapsedControl"],
-        section[data-testid="stSidebar"] button[data-testid="collapsedControl"] {{
+        /* === SIDEBAR BUTTON FIX === */
+        /* Simple, working sidebar toggle */
+        button[data-testid="collapsedControl"] {{
             display: block !important;
             visibility: visible !important;
             opacity: 1 !important;
-            position: fixed !important;
-            top: 1rem !important;
-            left: 1rem !important;
-            z-index: 999999 !important;
-            background-color: {button_bg} !important;
-            color: {text} !important;
-            border: 1px solid {border_color} !important;
-            border-radius: 4px !important;
-            padding: 8px 12px !important;
-            cursor: pointer !important;
-            font-size: 16px !important;
-            line-height: 1 !important;
-            min-width: auto !important;
-            min-height: auto !important;
-            width: auto !important;
-            height: auto !important;
-            transform: none !important;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1) !important;
-        }}
-        
-        /* Hover state for sidebar button */
-        button[data-testid="collapsedControl"]:hover,
-        div[data-testid="collapsedControl"]:hover {{
-            background-color: {hover_bg} !important;
-            border-color: {text} !important;
-        }}
-        
-        /* When sidebar is expanded, move button to the right */
-        .stSidebar:not([aria-expanded="false"]) + div button[data-testid="collapsedControl"],
-        section[data-testid="stSidebar"]:not([aria-expanded="false"]) + div button[data-testid="collapsedControl"] {{
-            left: 21rem !important;
-        }}
-        
-        /* Alternative selectors for sidebar control */
-        [data-testid*="collapse"],
-        [data-testid*="Collapse"],
-        [data-testid*="sidebar"] button,
-        button[aria-label*="sidebar"],
-        button[aria-label*="Sidebar"] {{
-            display: block !important;
-            visibility: visible !important;
-            opacity: 1 !important;
-            z-index: 999999 !important;
-        }}
-        
-        /* Force override for any button that might be the sidebar control */
-        button[title*="sidebar"],
-        button[title*="Sidebar"],
-        button[aria-label*="navigation"] {{
-            display: block !important;
-            visibility: visible !important;
-            opacity: 1 !important;
-            background-color: {button_bg} !important;
-            color: {text} !important;
-            border: 1px solid {border_color} !important;
+            z-index: 9999 !important;
             position: relative !important;
-            z-index: 999999 !important;
-        }}
-        
-        /* Ensure no other styles are hiding control buttons */
-        .stApp > div > div > div > div > button,
-        .stApp > header button,
-        .stApp button[data-baseweb="button"] {{
-            display: block !important;
-            visibility: visible !important;
-        }}
-        
-        /* Special handling for the sidebar when collapsed */
-        section[data-testid="stSidebar"][aria-expanded="false"] {{
-            width: 0 !important;
-            min-width: 0 !important;
-        }}
-        
-        /* Ensure sidebar content is properly styled when visible */
-        section[data-testid="stSidebar"][aria-expanded="true"] {{
-            width: 21rem !important;
-            min-width: 21rem !important;
-            background-color: {sidebar_bg} !important;
         }}
         
         /* === CUSTOM COMPONENTS === */
-        /* Engine icon */
+        /* Engine icon - moved to avoid conflicts */
         .engine-icon {{
             position: fixed;
-            top: 20px;
+            top: 70px;
             left: 20px;
-            z-index: 999;
+            z-index: 998;
             opacity: 0.3;
             transition: opacity 0.2s ease;
         }}
@@ -548,19 +411,21 @@ def set_theme():
             font-weight: 500;
         }}
         
-        /* Validation bubble */
+        /* Validation bubble - improved readability */
         .validation-bubble {{
             position: fixed;
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            background: {text};
-            color: {bg};
-            padding: 12px 24px;
-            border-radius: 25px;
+            background: rgba(220, 38, 38, 0.95) !important;
+            color: white !important;
+            padding: 16px 24px;
+            border-radius: 8px;
             font-size: 14px;
             font-weight: 500;
             z-index: 1000;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(220, 38, 38, 1);
             animation: fadeInOut 3s ease-in-out forwards;
         }}
         
@@ -603,220 +468,18 @@ def set_theme():
             }}
         }}
         
-        /* === MOBILE RESPONSIVE === */
-        @media (max-width: 768px) {{
-            .validation-bubble {{
-                font-size: 13px;
-                padding: 10px 20px;
-                max-width: 85vw;
-            }}
-            
-            .engine-icon {{
-                top: 15px;
-                left: 15px;
-            }}
-            
-            .backend-status {{
-                top: 15px;
-                right: 15px;
-                padding: 6px 12px;
-                font-size: 11px;
-            }}
-            
-            .main .block-container,
-            div[data-testid="block-container"] {{
-                padding-left: 1rem !important;
-                padding-right: 1rem !important;
-            }}
-            
-            /* Mobile sidebar button positioning */
-            button[data-testid="collapsedControl"] {{
-                top: 0.5rem !important;
-                left: 0.5rem !important;
-                padding: 6px 10px !important;
-                font-size: 14px !important;
-            }}
-        }}
-        
-        /* === FORCE OVERRIDE ANY REMAINING ELEMENTS === */
-        /* Catch-all for any missed elements */
+        /* === FORCE OVERRIDE === */
         [data-testid] {{
             background-color: {bg} !important;
             color: {text} !important;
         }}
         
-        /* Exception for chat input to maintain its styling */
         .stChatInput [data-testid],
         div[data-testid="stChatInput"] [data-testid] {{
             background-color: {input_bg} !important;
         }}
-
-        /* FIXED: Toggle switch styling with proper variables */
-        .stToggle > div > div, div[role="switch"] {{
-            background-color: {border_color} !important;
-            border: 1px solid {border_color} !important;
-            border-radius: 12px !important;
-            width: 44px !important;
-            height: 24px !important;
-            position: relative !important;
-            transition: all 0.3s ease !important;
-        }}
-
-        .stToggle > div > div[aria-checked="true"], div[role="switch"][aria-checked="true"] {{
-            background-color: {text} !important;
-            border-color: {text} !important;
-        }}
-
-        .stToggle > div > div::before, div[role="switch"]::before {{
-            content: '' !important;
-            position: absolute !important;
-            top: 2px !important;
-            left: 2px !important;
-            width: 16px !important;
-            height: 16px !important;
-            background-color: {bg} !important;
-            border-radius: 50% !important;
-            transition: all 0.3s ease !important;
-            box-shadow: none !important;
-        }}
-
-        .stToggle > div > div[aria-checked="true"]::before, div[role="switch"][aria-checked="true"]::before {{
-            left: 22px !important;
-            background-color: {bg} !important;
-        }}
-
-        /* FIXED: Chat input styling with proper variables */
-        .stChatInput > div, .stChatInput > div > div, div[data-testid="stChatInput"] > div, div[data-baseweb="input"] {{
-            border: 2px solid {border_color} !important;
-            border-radius: 24px !important;
-            transition: border-color 0.2s ease !important;
-            box-shadow: none !important;
-        }}
-
-        .stChatInput > div:focus-within, div[data-testid="stChatInput"] > div:focus-within, div[data-baseweb="input"]:focus-within {{
-            border-color: {text} !important;
-            box-shadow: none !important;
-        }}
-
-        .stChatInput, .stChatInput *, .stToggle, .stToggle * {{
-            -webkit-font-smoothing: antialiased !important;
-            transform: translateZ(0) !important;
-            background-clip: padding-box !important;
-        }}
-
-        .stChatInput::before, .stChatInput::after, div[data-testid="stChatInput"]::before, div[data-testid="stChatInput"]::after {{
-            display: none !important;
-        }}
   
     </style>
-    
-    <script>
-    // Enhanced device detection and theme management
-    (function() {{
-        const sessionId = '{st.session_state.session_id}';
-        const cssVersion = '{st.session_state.css_version}';
-        
-        // Improved device detection
-        function detectDevice() {{
-            const userAgent = navigator.userAgent.toLowerCase();
-            const isMobileUA = /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini/i.test(userAgent);
-            const isMobileScreen = window.innerWidth <= 768;
-            const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
-            
-            return isMobileUA || (isMobileScreen && isTouchDevice);
-        }}
-        
-        // Theme initialization
-        function initializeTheme() {{
-            const manualOverride = localStorage.getItem('manual_theme_override') === 'true';
-            const hasDetected = localStorage.getItem(`device_detected_${{sessionId}}`) === 'true';
-            
-            if (!manualOverride && !hasDetected) {{
-                const isMobile = detectDevice();
-                const shouldBeDark = !isMobile;
-                const currentIsDark = {str(st.session_state.dark_mode).lower()};
-                
-                if (currentIsDark !== shouldBeDark) {{
-                    localStorage.setItem(`device_detected_${{sessionId}}`, 'true');
-                    
-                    const url = new URL(window.location);
-                    url.searchParams.set('theme_auto', shouldBeDark ? 'dark' : 'light');
-                    url.searchParams.set('s', sessionId);
-                    
-                    const cleanUrl = `${{url.origin}}${{url.pathname}}?theme_auto=${{shouldBeDark ? 'dark' : 'light'}}&s=${{sessionId}}`;
-                    window.location.replace(cleanUrl);
-                    return;
-                }}
-            }}
-        }}
-        
-        // Enhanced CSS application
-        function applyCSSFixes() {{
-            // Remove old theme styles
-            const oldStyles = document.querySelectorAll('[id^="main-theme-"]');
-            oldStyles.forEach(style => {{
-                if (style.id !== `main-theme-${{cssVersion}}`) {{
-                    style.remove();
-                }}
-            }});
-            
-            // Force style reapplication
-            const currentStyle = document.getElementById(`main-theme-${{cssVersion}}`);
-            if (currentStyle) {{
-                // Clone and reapply to force refresh
-                const newStyle = currentStyle.cloneNode(true);
-                currentStyle.remove();
-                document.head.appendChild(newStyle);
-            }}
-            
-            // Force reflow
-            document.body.offsetHeight;
-            
-            // Additional aggressive styling for stubborn elements
-            setTimeout(() => {{
-                const stubborElements = document.querySelectorAll('div, p, span, section');
-                stubborElements.forEach(el => {{
-                    if (!el.style.backgroundColor || el.style.backgroundColor === 'transparent') {{
-                        // Only force if element doesn't already have explicit styling
-                        const computedStyle = getComputedStyle(el);
-                        if (computedStyle.backgroundColor === 'rgba(0, 0, 0, 0)' || 
-                            computedStyle.backgroundColor === 'transparent') {{
-                            el.style.backgroundColor = '{bg}';
-                            el.style.color = '{text}';
-                        }}
-                    }}
-                }});
-            }}, 500);
-        }}
-        
-        // Initialize everything
-        if (document.readyState === 'loading') {{
-            document.addEventListener('DOMContentLoaded', function() {{
-                applyCSSFixes();
-                setTimeout(initializeTheme, 100);
-            }});
-        }} else {{
-            applyCSSFixes();
-            setTimeout(initializeTheme, 100);
-        }}
-        
-        // Reapply styles on any DOM changes
-        const observer = new MutationObserver(function(mutations) {{
-            let shouldReapply = false;
-            mutations.forEach(function(mutation) {{
-                if (mutation.type === 'childList' && mutation.addedNodes.length > 0) {{
-                    shouldReapply = true;
-                }}
-            }});
-            
-            if (shouldReapply) {{
-                setTimeout(applyCSSFixes, 100);
-            }}
-        }});
-        
-        observer.observe(document.body, {{ childList: true, subtree: true }});
-    }})();
-    </script>
     """
     
     st.markdown(css_content, unsafe_allow_html=True)
@@ -832,12 +495,10 @@ if "theme_auto" in st.query_params and not st.session_state.manual_theme_overrid
     if session_param == st.session_state.session_id:
         if theme_auto == "dark" and not st.session_state.dark_mode:
             st.session_state.dark_mode = True
-            # Clear URL params after applying
             st.query_params.clear()
             st.rerun()
         elif theme_auto == "light" and st.session_state.dark_mode:
             st.session_state.dark_mode = False
-            # Clear URL params after applying
             st.query_params.clear()
             st.rerun()
 
