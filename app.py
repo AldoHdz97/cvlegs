@@ -420,7 +420,6 @@ def set_theme():
         
         /* === HIDE STREAMLIT ELEMENTS === */
         #MainMenu, footer, header,
-        div[data-testid="stToolbar"],
         .stDeployButton,
         div[data-testid="stDecoration"],
         .stSpinner,
@@ -429,12 +428,18 @@ def set_theme():
             display: none !important;
         }}
         
-        /* === SIDEBAR BUTTON FIX - MINIMAL APPROACH === */
-        /* Just ensure the sidebar button is visible - don't override anything else */
-        button[data-testid="collapsedControl"] {{
+        /* === SIDEBAR BUTTON FIX === */
+        /* Force sidebar toggle button to be visible */
+        button[data-testid="collapsedControl"],
+        button[kind="header"],
+        button[data-testid="stSidebarNav"],
+        .stApp > header button,
+        .stApp header button {{
             display: block !important;
             visibility: visible !important;
             opacity: 1 !important;
+            position: relative !important;
+            z-index: 9999 !important;
         }}
         
         /* === CUSTOM COMPONENTS === */
@@ -547,9 +552,13 @@ def set_theme():
             }}
         }}
         
-        /* === FORCE OVERRIDE ANY REMAINING ELEMENTS === */
-        /* Catch-all for any missed elements */
-        [data-testid] {{
+        /* === SPECIFIC ELEMENT OVERRIDES === */
+        /* Apply theme colors to specific elements instead of catch-all */
+        .stMarkdown, .stText, .stCaption,
+        div[data-testid="column"],
+        div[data-testid="stHorizontalBlock"],
+        div[data-testid="stVerticalBlock"],
+        div[data-testid="stExpander"] {{
             background-color: {bg} !important;
             color: {text} !important;
         }}
