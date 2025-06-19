@@ -549,6 +549,57 @@ def set_theme():
         div[data-testid="stChatInput"] [data-testid] {{
             background-color: {input_bg} !important;
         }}
+
+        .stToggle > div > div, div[role="switch"] {{
+            background-color: {border_color} !important;
+            border: 2px solid {border_color} !important;
+            border-radius: 12px !importante;
+            width: 44px !importante;
+            height: 24px !importante;
+            position: relative !important;
+            transition: all 0.3s ease !important;
+        }}
+
+        .stToggle > div > div[aria-checked="true"], div[role="switch"][aria-checked="true"] {{
+            background-color: #4CAF50 !important;
+            border-color: #4CAF50 !important;
+        }}
+
+        .stToggle > div > div::before, div[role="switch"]::before {{
+            content: '' !important;
+            position: absolute !important;
+            top: 2px !important;
+            left: 2px !important;
+            width: 16px !important;
+            height: 16px !important;
+            background-color: {text} !important;
+            border-radius: 50% !important;
+            transition: all 0.3s ease !important;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2) !important;
+        }}
+
+        .stToggle > div > div[aria-checked="true"]::before, div[role="switch"][aria-checked="true"]::before {{
+            left: 22px !important;
+            background-color: white !important;
+        }}
+
+        .stChatInput > div, .stChatInput > div > div, div[data-testid="stChatInput"] > div, div[data-baseweb="input"] {{
+            border: 2px solid {border_color} !important;
+            border-radius: 24px !important;
+            transition: all 0.3s ease !important;
+        }}
+
+        .stChatInput > div:focus-within, div[data-testid="stChatInput"] > div:focus-within, div[data-baseweb="input"]:focus-within {{
+            border-color: #4CAF50 !important;
+            box-shadow: 0 0 0 3px #4CAF5020 !important;
+        }}
+
+        .stChatInput, .stChatInput *, .stToggle, .stToggle * {{
+            -webkit-font-smoothing: antialiased !important;
+            transform: translateZ(0) !important;
+            background-clip: padding-box !important;
+        }}
+        
     </style>
     
     <script>
