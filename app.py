@@ -233,7 +233,7 @@ def set_theme():
             background: transparent !important;
         }}
         
-        /* === CHAT INPUT - FIXED SEMICIRCLE ISSUE === */
+        /* === CHAT INPUT - FIXED SEMICIRCLE ISSUE + ANTI-ALIASING === */
         /* Main chat input container */
         .stChatInput,
         div[data-testid="stChatInput"] {{
@@ -257,6 +257,9 @@ def set_theme():
             transition: border-color 0.2s ease !important;
             box-shadow: none !important;
             outline: none !important;
+            -webkit-font-smoothing: antialiased !important;
+            -moz-osx-font-smoothing: grayscale !important;
+            text-rendering: optimizeLegibility !important;
         }}
         
         /* Focus states */
@@ -283,6 +286,9 @@ def set_theme():
             caret-color: {chat_text} !important;
             border-radius: 1.5rem !important;
             resize: none !important;
+            -webkit-font-smoothing: antialiased !important;
+            -moz-osx-font-smoothing: grayscale !important;
+            text-rendering: optimizeLegibility !important;
         }}
         
         /* Placeholder text */
@@ -418,13 +424,26 @@ def set_theme():
         
         /* === HIDE STREAMLIT ELEMENTS === */
         #MainMenu, footer, header,
-        div[data-testid="stToolbar"],
         .stDeployButton,
         div[data-testid="stDecoration"],
         .stSpinner,
         div[data-testid="stSpinner"] {{
             visibility: hidden !important;
             display: none !important;
+        }}
+        
+        /* === SIDEBAR BUTTON FIX === */
+        /* Ensure sidebar toggle button is always visible */
+        button[data-testid="collapsedControl"],
+        button[kind="header"],
+        button[data-testid="stSidebarNav"],
+        .stApp > header button,
+        .stApp header button {{
+            display: block !important;
+            visibility: visible !important;
+            opacity: 1 !important;
+            position: relative !important;
+            z-index: 9999 !important;
         }}
         
         /* === CUSTOM COMPONENTS === */
@@ -455,19 +474,21 @@ def set_theme():
             font-weight: 500;
         }}
         
-        /* Validation bubble */
+        /* Validation bubble - FIXED TEXT COLOR */
         .validation-bubble {{
             position: fixed;
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            background: {text};
-            color: {bg};
+            background: rgba(255, 255, 255, 0.95) !important;
+            color: #000000 !important;
             padding: 12px 24px;
             border-radius: 25px;
             font-size: 14px;
             font-weight: 500;
             z-index: 1000;
+            border: 1px solid #cccccc;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
             animation: fadeInOut 3s ease-in-out forwards;
         }}
         
