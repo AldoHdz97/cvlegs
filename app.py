@@ -550,56 +550,67 @@ def set_theme():
             background-color: {input_bg} !important;
         }}
 
-        .stToggle > div > div, div[role="switch"] {{
-            background-color: {border_color} !important;
-            border: 2px solid {border_color} !important;
-            border-radius: 12px !importante;
-            width: 44px !importante;
-            height: 24px !importante;
+        .stToggle > div > div, div[role="switch"] {
+            background-color: #333 !important;
+            border: 1px solid #333 !important;
+            border-radius: 12px !important;
+            width: 44px !important;
+            height: 24px !important;
             position: relative !important;
             transition: all 0.3s ease !important;
-        }}
+        }
 
-        .stToggle > div > div[aria-checked="true"], div[role="switch"][aria-checked="true"] {{
-            background-color: #4CAF50 !important;
-            border-color: #4CAF50 !important;
-        }}
+        .stToggle > div > div[aria-checked="true"], div[role="switch"][aria-checked="true"] {
+            background-color: #ffffff !important;
+            border-color: #ffffff !important;
+        }
 
-        .stToggle > div > div::before, div[role="switch"]::before {{
+        .stToggle > div > div::before, div[role="switch"]::before {
             content: '' !important;
             position: absolute !important;
             top: 2px !important;
             left: 2px !important;
             width: 16px !important;
             height: 16px !important;
-            background-color: {text} !important;
+            background-color: #000510 !important;
             border-radius: 50% !important;
             transition: all 0.3s ease !important;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.2) !important;
-        }}
+            box-shadow: none !important;
+        }
 
-        .stToggle > div > div[aria-checked="true"]::before, div[role="switch"][aria-checked="true"]::before {{
+        .stToggle > div > div[aria-checked="true"]::before, div[role="switch"][aria-checked="true"]::before {
             left: 22px !important;
-            background-color: white !important;
-        }}
+            background-color: #000510 !important;
+        }
 
-        .stChatInput > div, .stChatInput > div > div, div[data-testid="stChatInput"] > div, div[data-baseweb="input"] {{
+        .stChatInput > div, .stChatInput > div > div, div[data-testid="stChatInput"] > div, div[data-baseweb="input"] {
             border: 2px solid {border_color} !important;
             border-radius: 24px !important;
-            transition: all 0.3s ease !important;
-        }}
+            transition: border-color 0.2s ease !important;
+            box-shadow: none !important;
+        }
 
-        .stChatInput > div:focus-within, div[data-testid="stChatInput"] > div:focus-within, div[data-baseweb="input"]:focus-within {{
-            border-color: #4CAF50 !important;
-            box-shadow: 0 0 0 3px #4CAF5020 !important;
-        }}
+        .stChatInput > div:focus-within, div[data-testid="stChatInput"] > div:focus-within, div[data-baseweb="input"]:focus-within {
+            border-color: #ffffff !important;
+            box-shadow: none !important;
+        }
 
-        .stChatInput, .stChatInput *, .stToggle, .stToggle * {{
+        .stChatInput, .stChatInput *, .stToggle, .stToggle * {
             -webkit-font-smoothing: antialiased !important;
             transform: translateZ(0) !important;
             background-clip: padding-box !important;
-        }}
-        
+        }
+
+        .stChatInput::before, .stChatInput::after, div[data-testid="stChatInput"]::before, div[data-testid="stChatInput"]::after {
+            display: none !important;
+        }
+
+        button[data-testid="collapsedControl"], div[data-testid="collapsedControl"] {
+            display: block !important;
+            visibility: visible !important;
+            opacity: 1 !important;
+        }
+  
     </style>
     
     <script>
