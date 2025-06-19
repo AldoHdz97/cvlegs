@@ -110,44 +110,81 @@ if cv_client is None:
 else:
     st.session_state.backend_connected = None
 
-# --- MINIMALISTIC THEME CONTROL ---
+# --- COMPREHENSIVE THEME CONTROL ---
 def set_theme():
-    """Minimalistic theme system with performance optimizations"""
+    """Comprehensive theme system with full coverage"""
     if st.session_state.dark_mode:
+        # Dark theme colors
         bg, text = "#000510", "#ffffff"
         chat_bg, chat_text = "#1a1a1a", "#ffffff"
         sidebar_bg = "#0f0f0f"
         placeholder_color = "#888"
         border_color = "#333"
+        input_bg = "#1a1a1a"
+        button_bg = "#2a2a2a"
+        button_text = "#ffffff"
+        hover_bg = "#333"
     else:
+        # Light theme colors
         bg, text = "#ffffff", "#222326"
         chat_bg, chat_text = "#f8f8f8", "#222326"
         sidebar_bg = "#fafafa"
         placeholder_color = "#666"
         border_color = "#e0e0e0"
+        input_bg = "#ffffff"
+        button_bg = "#f0f0f0"
+        button_text = "#222326"
+        hover_bg = "#f5f5f5"
 
-    # Minimalistic CSS with performance optimizations
+    # Comprehensive CSS with complete coverage
     css_content = f"""
     <style id="main-theme-{st.session_state.css_version}">
-        /* Anti-cache headers */
+        /* Force cache busting */
         meta[http-equiv="Cache-Control"] {{ content: "no-cache, no-store, must-revalidate"; }}
         
-        /* Core app styling */
-        html, body, #root, .stApp, 
+        /* === CORE APP STRUCTURE === */
+        html, body, #root, 
+        .stApp, 
         div[data-testid="stAppViewContainer"], 
-        section[data-testid="stAppViewContainer"] {{
+        section[data-testid="stAppViewContainer"],
+        .main,
+        div[data-testid="stMain"],
+        .main .block-container,
+        div[data-testid="block-container"] {{
             background-color: {bg} !important;
             color: {text} !important;
         }}
         
         .main .block-container,
         div[data-testid="block-container"] {{
-            background-color: {bg} !important;
-            color: {text} !important;
             padding-top: 2rem !important;
+            padding-bottom: 2rem !important;
         }}
         
-        /* Clean chat messages - no colored backgrounds, proper alignment */
+        /* === COMPREHENSIVE ELEMENT COVERAGE === */
+        /* All text elements */
+        p, span, div, h1, h2, h3, h4, h5, h6, 
+        .stMarkdown, .stMarkdown *, 
+        .stText, .stText *,
+        .stCaption, .stCaption *,
+        .stSuccess, .stSuccess *,
+        .stError, .stError *,
+        .stWarning, .stWarning *,
+        .stInfo, .stInfo * {{
+            color: {text} !important;
+        }}
+        
+        /* All container elements */
+        .stContainer, .stColumn, .stColumns,
+        div[data-testid="column"],
+        div[data-testid="stHorizontalBlock"],
+        div[data-testid="stVerticalBlock"] {{
+            background-color: {bg} !important;
+            color: {text} !important;
+        }}
+        
+        /* === CHAT SYSTEM - CLEAN AND CONSISTENT === */
+        /* Chat messages container */
         div[data-testid="chat-message"],
         .stChatMessage {{
             background: transparent !important;
@@ -156,11 +193,15 @@ def set_theme():
             display: flex !important;
             align-items: flex-start !important;
             gap: 0.75rem !important;
+            border: none !important;
+            box-shadow: none !important;
         }}
         
-        /* Remove avatar backgrounds */
+        /* Avatar styling - remove all backgrounds */
         div[data-testid="chat-message"] > div:first-child,
-        .stChatMessage > div:first-child {{
+        .stChatMessage > div:first-child,
+        div[data-testid="chat-message"] img,
+        .stChatMessage img {{
             background: transparent !important;
             border-radius: 50% !important;
             padding: 0 !important;
@@ -170,13 +211,16 @@ def set_theme():
             display: flex !important;
             align-items: center !important;
             justify-content: center !important;
+            border: none !important;
+            box-shadow: none !important;
         }}
         
-        /* Chat message content alignment */
+        /* Chat message content */
         div[data-testid="chat-message"] > div:last-child,
         .stChatMessage > div:last-child {{
             flex: 1 !important;
             padding-top: 8px !important;
+            background: transparent !important;
         }}
         
         div[data-testid="chat-message"] p,
@@ -186,40 +230,50 @@ def set_theme():
             color: {text} !important;
             margin: 0 !important;
             line-height: 1.5 !important;
+            background: transparent !important;
         }}
         
-        /* Hide Streamlit loading spinner */
-        .stSpinner,
-        div[data-testid="stSpinner"] {{
-            display: none !important;
+        /* === CHAT INPUT - FIXED SEMICIRCLE ISSUE === */
+        /* Main chat input container */
+        .stChatInput,
+        div[data-testid="stChatInput"] {{
+            background: transparent !important;
         }}
         
-        /* Hide Streamlit branding */
-        #MainMenu, footer, header,
-        div[data-testid="stToolbar"],
-        .stDeployButton,
-        div[data-testid="stDecoration"] {{
-            visibility: hidden !important;
-            display: none !important;
-        }}
-
-        /* Minimalistic chat input */
+        /* All nested input containers - this fixes the semicircle */
+        .stChatInput > div,
+        .stChatInput > div > div,
+        .stChatInput > div > div > div,
         .stChatInput > div > div > div > div,
         div[data-testid="stChatInput"] > div,
-        div[data-baseweb="input"] {{
-            background: {chat_bg} !important;
+        div[data-testid="stChatInput"] > div > div,
+        div[data-testid="stChatInput"] > div > div > div,
+        div[data-baseweb="input"],
+        div[data-baseweb="input"] > div,
+        div[data-baseweb="input"] > div > div {{
+            background: {input_bg} !important;
             border: 1px solid {border_color} !important;
             border-radius: 1.5rem !important;
             transition: border-color 0.2s ease !important;
+            box-shadow: none !important;
+            outline: none !important;
         }}
-
+        
+        /* Focus states */
+        .stChatInput > div:focus-within,
+        .stChatInput > div > div:focus-within,
+        .stChatInput > div > div > div:focus-within,
         .stChatInput > div > div > div > div:focus-within,
-        div[data-testid="stChatInput"] > div:focus-within {{
+        div[data-testid="stChatInput"] > div:focus-within,
+        div[data-baseweb="input"]:focus-within {{
             border-color: {text} !important;
+            box-shadow: none !important;
         }}
-
+        
+        /* Textarea itself */
         .stChatInput textarea,
-        div[data-testid="stChatInput"] textarea {{
+        div[data-testid="stChatInput"] textarea,
+        textarea[data-testid="stChatInput"] {{
             background-color: transparent !important;
             color: {chat_text} !important;
             border: none !important;
@@ -227,53 +281,154 @@ def set_theme():
             padding: 0.75rem 1rem !important;
             font-size: 14px !important;
             caret-color: {chat_text} !important;
+            border-radius: 1.5rem !important;
+            resize: none !important;
         }}
-
+        
+        /* Placeholder text */
         .stChatInput textarea::placeholder,
         div[data-testid="stChatInput"] textarea::placeholder {{
             color: {placeholder_color} !important;
             opacity: 0.7 !important;
         }}
-
-        /* Force remove validation styling */
+        
+        /* Remove all focus outlines and validation styling */
         .stChatInput *,
         .stChatInput *:focus,
         .stChatInput *:hover,
         .stChatInput *:active,
-        .stChatInput *:invalid {{
-            border-color: {border_color} !important;
+        .stChatInput *:invalid,
+        div[data-testid="stChatInput"] *,
+        div[data-testid="stChatInput"] *:focus,
+        div[data-testid="stChatInput"] *:hover {{
             outline: none !important;
             box-shadow: none !important;
         }}
-
-        .stChatInput *:focus {{
-            border-color: {text} !important;
-        }}
-
-        /* Clean sidebar */
+        
+        /* === SIDEBAR - COMPLETE COVERAGE === */
         .stSidebar,
-        section[data-testid="stSidebar"] {{
+        section[data-testid="stSidebar"],
+        .stSidebar > div,
+        section[data-testid="stSidebar"] > div {{
             background-color: {sidebar_bg} !important;
             border-right: 1px solid {border_color} !important;
+            color: {text} !important;
         }}
         
-        .stSidebar .stSelectbox > div > div,
-        .stSidebar .stToggle,
+        /* All sidebar elements */
+        .stSidebar *,
+        section[data-testid="stSidebar"] *,
         .stSidebar div,
         .stSidebar p,
         .stSidebar span,
-        .stSidebar label {{
+        .stSidebar label,
+        .stSidebar h1,
+        .stSidebar h2,
+        .stSidebar h3,
+        .stSidebar h4,
+        .stSidebar h5,
+        .stSidebar h6 {{
             color: {text} !important;
+            background-color: transparent !important;
         }}
-
-        /* Clean selectbox */
-        .stSelectbox > div > div {{
-            background-color: {chat_bg} !important;
+        
+        /* === FORM CONTROLS === */
+        /* Selectbox */
+        .stSelectbox,
+        .stSelectbox > div,
+        .stSelectbox > div > div,
+        .stSelectbox select {{
+            background-color: {input_bg} !important;
+            color: {text} !important;
             border: 1px solid {border_color} !important;
             border-radius: 0.5rem !important;
         }}
-
-        /* Minimalistic engine icon */
+        
+        /* Toggle switch */
+        .stToggle,
+        .stCheckbox {{
+            color: {text} !important;
+        }}
+        
+        /* Buttons */
+        .stButton button,
+        button[data-testid="stButton"],
+        .stButton > button {{
+            background-color: {button_bg} !important;
+            color: {button_text} !important;
+            border: 1px solid {border_color} !important;
+            border-radius: 0.5rem !important;
+            transition: background-color 0.2s ease !important;
+        }}
+        
+        .stButton button:hover,
+        button[data-testid="stButton"]:hover {{
+            background-color: {hover_bg} !important;
+        }}
+        
+        /* Text input and text area */
+        .stTextInput input,
+        .stTextArea textarea,
+        input[data-testid="stTextInput"],
+        textarea[data-testid="stTextArea"] {{
+            background-color: {input_bg} !important;
+            color: {text} !important;
+            border: 1px solid {border_color} !important;
+            border-radius: 0.5rem !important;
+        }}
+        
+        /* === STATUS AND INFO ELEMENTS === */
+        .stSuccess {{
+            background-color: rgba(0, 255, 0, 0.1) !important;
+            color: {text} !important;
+            border: 1px solid rgba(0, 255, 0, 0.3) !important;
+        }}
+        
+        .stError {{
+            background-color: rgba(255, 0, 0, 0.1) !important;
+            color: {text} !important;
+            border: 1px solid rgba(255, 0, 0, 0.3) !important;
+        }}
+        
+        .stInfo {{
+            background-color: rgba(0, 100, 255, 0.1) !important;
+            color: {text} !important;
+            border: 1px solid rgba(0, 100, 255, 0.3) !important;
+        }}
+        
+        .stWarning {{
+            background-color: rgba(255, 165, 0, 0.1) !important;
+            color: {text} !important;
+            border: 1px solid rgba(255, 165, 0, 0.3) !important;
+        }}
+        
+        /* Expander */
+        .stExpander,
+        div[data-testid="stExpander"] {{
+            background-color: {bg} !important;
+            border: 1px solid {border_color} !important;
+            border-radius: 0.5rem !important;
+        }}
+        
+        .stExpander summary,
+        div[data-testid="stExpander"] summary {{
+            background-color: {bg} !important;
+            color: {text} !important;
+        }}
+        
+        /* === HIDE STREAMLIT ELEMENTS === */
+        #MainMenu, footer, header,
+        div[data-testid="stToolbar"],
+        .stDeployButton,
+        div[data-testid="stDecoration"],
+        .stSpinner,
+        div[data-testid="stSpinner"] {{
+            visibility: hidden !important;
+            display: none !important;
+        }}
+        
+        /* === CUSTOM COMPONENTS === */
+        /* Engine icon */
         .engine-icon {{
             position: fixed;
             top: 20px;
@@ -285,8 +440,8 @@ def set_theme():
         .engine-icon:hover {{
             opacity: 0.6;
         }}
-
-        /* Simple backend status */
+        
+        /* Backend status */
         .backend-status {{
             position: fixed;
             top: 20px;
@@ -299,8 +454,8 @@ def set_theme():
             font-size: 12px;
             font-weight: 500;
         }}
-
-        /* Clean validation bubble */
+        
+        /* Validation bubble */
         .validation-bubble {{
             position: fixed;
             top: 50%;
@@ -315,15 +470,15 @@ def set_theme():
             z-index: 1000;
             animation: fadeInOut 3s ease-in-out forwards;
         }}
-
+        
         @keyframes fadeInOut {{
             0% {{ opacity: 0; transform: translate(-50%, -50%) scale(0.9); }}
             15% {{ opacity: 1; transform: translate(-50%, -50%) scale(1); }}
             85% {{ opacity: 1; transform: translate(-50%, -50%) scale(1); }}
             100% {{ opacity: 0; transform: translate(-50%, -50%) scale(0.9); visibility: hidden; }}
         }}
-
-        /* Simple animated dots for loading - aligned with avatar */
+        
+        /* Loading dots animation */
         .loading-dots {{
             display: flex;
             align-items: center;
@@ -331,7 +486,7 @@ def set_theme():
             padding-top: 8px;
             gap: 4px;
         }}
-
+        
         .loading-dots span {{
             width: 4px;
             height: 4px;
@@ -339,11 +494,11 @@ def set_theme():
             background-color: {text};
             animation: dotPulse 1.4s infinite ease-in-out;
         }}
-
+        
         .loading-dots span:nth-child(1) {{ animation-delay: 0s; }}
         .loading-dots span:nth-child(2) {{ animation-delay: 0.2s; }}
         .loading-dots span:nth-child(3) {{ animation-delay: 0.4s; }}
-
+        
         @keyframes dotPulse {{
             0%, 60%, 100% {{ 
                 opacity: 0.3; 
@@ -354,8 +509,8 @@ def set_theme():
                 transform: scale(1); 
             }}
         }}
-
-        /* Mobile responsive */
+        
+        /* === MOBILE RESPONSIVE === */
         @media (max-width: 768px) {{
             .validation-bubble {{
                 font-size: 13px;
@@ -374,13 +529,33 @@ def set_theme():
                 padding: 6px 12px;
                 font-size: 11px;
             }}
+            
+            .main .block-container,
+            div[data-testid="block-container"] {{
+                padding-left: 1rem !important;
+                padding-right: 1rem !important;
+            }}
+        }}
+        
+        /* === FORCE OVERRIDE ANY REMAINING ELEMENTS === */
+        /* Catch-all for any missed elements */
+        [data-testid] {{
+            background-color: {bg} !important;
+            color: {text} !important;
+        }}
+        
+        /* Exception for chat input to maintain its styling */
+        .stChatInput [data-testid],
+        div[data-testid="stChatInput"] [data-testid] {{
+            background-color: {input_bg} !important;
         }}
     </style>
     
     <script>
-    // Simple, reliable device detection and theme management
+    // Enhanced device detection and theme management
     (function() {{
         const sessionId = '{st.session_state.session_id}';
+        const cssVersion = '{st.session_state.css_version}';
         
         // Improved device detection
         function detectDevice() {{
@@ -392,7 +567,7 @@ def set_theme():
             return isMobileUA || (isMobileScreen && isTouchDevice);
         }}
         
-        // Simple theme initialization
+        // Theme initialization
         function initializeTheme() {{
             const manualOverride = localStorage.getItem('manual_theme_override') === 'true';
             const hasDetected = localStorage.getItem(`device_detected_${{sessionId}}`) === 'true';
@@ -405,12 +580,10 @@ def set_theme():
                 if (currentIsDark !== shouldBeDark) {{
                     localStorage.setItem(`device_detected_${{sessionId}}`, 'true');
                     
-                    // Simple URL redirect approach
                     const url = new URL(window.location);
                     url.searchParams.set('theme_auto', shouldBeDark ? 'dark' : 'light');
                     url.searchParams.set('s', sessionId);
                     
-                    // Clear any existing params and redirect
                     const cleanUrl = `${{url.origin}}${{url.pathname}}?theme_auto=${{shouldBeDark ? 'dark' : 'light'}}&s=${{sessionId}}`;
                     window.location.replace(cleanUrl);
                     return;
@@ -418,18 +591,43 @@ def set_theme():
             }}
         }}
         
-        // Force CSS application
+        // Enhanced CSS application
         function applyCSSFixes() {{
-            // Remove old styles
+            // Remove old theme styles
             const oldStyles = document.querySelectorAll('[id^="main-theme-"]');
             oldStyles.forEach(style => {{
-                if (style.id !== 'main-theme-{st.session_state.css_version}') {{
+                if (style.id !== `main-theme-${{cssVersion}}`) {{
                     style.remove();
                 }}
             }});
             
+            // Force style reapplication
+            const currentStyle = document.getElementById(`main-theme-${{cssVersion}}`);
+            if (currentStyle) {{
+                // Clone and reapply to force refresh
+                const newStyle = currentStyle.cloneNode(true);
+                currentStyle.remove();
+                document.head.appendChild(newStyle);
+            }}
+            
             // Force reflow
             document.body.offsetHeight;
+            
+            // Additional aggressive styling for stubborn elements
+            setTimeout(() => {{
+                const stubborElements = document.querySelectorAll('div, p, span, section');
+                stubborElements.forEach(el => {{
+                    if (!el.style.backgroundColor || el.style.backgroundColor === 'transparent') {{
+                        // Only force if element doesn't already have explicit styling
+                        const computedStyle = getComputedStyle(el);
+                        if (computedStyle.backgroundColor === 'rgba(0, 0, 0, 0)' || 
+                            computedStyle.backgroundColor === 'transparent') {{
+                            el.style.backgroundColor = '{bg}';
+                            el.style.color = '{text}';
+                        }}
+                    }}
+                }});
+            }}, 500);
         }}
         
         // Initialize everything
@@ -442,6 +640,22 @@ def set_theme():
             applyCSSFixes();
             setTimeout(initializeTheme, 100);
         }}
+        
+        // Reapply styles on any DOM changes
+        const observer = new MutationObserver(function(mutations) {{
+            let shouldReapply = false;
+            mutations.forEach(function(mutation) {{
+                if (mutation.type === 'childList' && mutation.addedNodes.length > 0) {{
+                    shouldReapply = true;
+                }}
+            }});
+            
+            if (shouldReapply) {{
+                setTimeout(applyCSSFixes, 100);
+            }}
+        }});
+        
+        observer.observe(document.body, {{ childList: true, subtree: true }});
     }})();
     </script>
     """
