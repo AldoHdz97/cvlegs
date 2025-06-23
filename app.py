@@ -344,8 +344,47 @@ def set_theme():
             border-radius: 0.5rem !important;
         }}
         
-        /* Toggle switch */
-        .stToggle,
+        /* FIX 2: Toggle switch - MAKE ONLY SWITCH CLICKABLE */
+        .stToggle {{
+            color: {text} !important;
+        }}
+        
+        /* Disable clicking on the entire toggle container */
+        .stToggle label {{
+            pointer-events: none !important;
+            cursor: default !important;
+        }}
+        
+        /* Re-enable clicking only on the actual switch element */
+        .stToggle label input[type="checkbox"] {{
+            pointer-events: auto !important;
+            cursor: pointer !important;
+        }}
+        
+        /* Re-enable clicking on the switch visual element */
+        .stToggle label > div[data-testid] {{
+            pointer-events: auto !important;
+            cursor: pointer !important;
+        }}
+        
+        /* Specifically target the switch button/slider */
+        .stToggle label > div > div {{
+            pointer-events: auto !important;
+            cursor: pointer !important;
+        }}
+        
+        /* Make sure text part is not clickable */
+        .stToggle label > div:first-child {{
+            pointer-events: none !important;
+            cursor: default !important;
+        }}
+        
+        /* Alternative selector for the switch itself */
+        .stToggle [role="switch"] {{
+            pointer-events: auto !important;
+            cursor: pointer !important;
+        }}
+        
         .stCheckbox {{
             color: {text} !important;
         }}
@@ -735,8 +774,8 @@ with st.sidebar:
         help="Choose how you'd like responses formatted"
     )
     
-    # FIX 2: Dark mode toggle - REMOVED MOON, PROPER TOGGLE
-    dark_mode = st.toggle("Dark Mode", value=st.session_state.dark_mode, key="theme_toggle")
+    # Clean theme toggle - REVERTED TO INVESTIGATE ISSUE
+    dark_mode = st.toggle("🌙 Dark Mode", value=st.session_state.dark_mode, key="theme_toggle")
     if dark_mode != st.session_state.dark_mode:
         st.session_state.dark_mode = dark_mode
         st.session_state.manual_theme_override = True
