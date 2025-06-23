@@ -470,84 +470,34 @@ def set_theme():
             font-weight: 500;
         }}
         
-        /* 🆕 Schedule Interview Pointer - FIXED VERSION */
+        /* Schedule Interview Pointer */
         .schedule-pointer {{
             position: fixed;
-            top: 180px;  /* 🔧 AJUSTADO para alinear con sidebar */
-            left: 60px;  /* 🔧 AJUSTADO para apuntar al sidebar */
+            top: 20px;
+            left: 80px;
             z-index: 500;
             pointer-events: none;
-            opacity: 0.85;  /* 🔧 VISIBLE inmediatamente */
+            opacity: 0;
             transition: all 0.3s ease;
-            font-family: 'Georgia', 'Times New Roman', serif;
+        }}
+
+        .schedule-pointer.show {{
+            opacity: 0.9 !important;
         }}
 
         .schedule-pointer.hidden {{
-            opacity: 0;
+            opacity: 0 !important;
             visibility: hidden;
             transform: scale(0.9);
         }}
 
-        .schedule-pointer svg {{
-            filter: drop-shadow(2px 2px 6px rgba(0,0,0,0.15));
-        }}
-
-        /* Theme-aware colors */
-        .schedule-pointer .arrow-path {{
-            stroke: {text};
-            fill: none;
-            stroke-width: 2.5;
-            stroke-linecap: round;
-            stroke-linejoin: round;
-            opacity: 0.9;
-        }}
-
-        .schedule-pointer .text-element {{
-            fill: {text};
-            font-family: 'Georgia', 'Times New Roman', serif;
-            font-size: 14px;  /* 🔧 Tamaño ajustado */
-            font-style: italic;
-            font-weight: 500;
-            opacity: 0.95;
-        }}
-
-        .schedule-pointer .background-shape {{
-            fill: {bg};
-            fill-opacity: 0.92;
-            stroke: {text};
-            stroke-width: 1;
-            stroke-opacity: 0.3;
-        }}
-
-        /* Floating animation */
-        @keyframes schedulePointFloat {{
-            0%, 100% {{ 
-                transform: translateY(0px); 
-            }}
-            50% {{ 
-                transform: translateY(-4px); 
-            }}
-        }}
-
-        .schedule-pointer {{
-            animation: schedulePointFloat 4s ease-in-out infinite;
-        }}
-
-        /* Responsive design */
-        @media (max-width: 1200px) {{
-            .schedule-pointer {{
-                left: 50px;
-                top: 160px;
-            }}
-        }}
-
-        @media (max-width: 768px) {{
+        @media (max-width: 1024px) {{
             .schedule-pointer {{
                 display: none !important;
             }}
         }}
         
-        /* FIX 1: Validation bubble - FIXED CONTRAST */
+        /* Validation bubble */
         .validation-bubble {{
             position: fixed;
             top: 50%;
@@ -713,57 +663,95 @@ def set_theme():
                 applyCSSFixes();
                 setTimeout(initializeTheme, 100);
                 
-                // Simple pointer management
+                // Fixed pointer management - points to sidebar button
                 setTimeout(() => {{
                     const pointer = document.getElementById('schedule-pointer');
-                    if (pointer && window.innerWidth > 768) {{
-                        pointer.style.opacity = '0.85';
+                    if (pointer && window.innerWidth > 1024) {{
+                        // Show the pointer
+                        pointer.classList.add('show');
                         
-                        // Hide after user interaction
-                        ['click', 'scroll', 'keydown'].forEach(eventType => {{
+                        // Hide when sidebar opens or user interacts
+                        function hidePointer() {{
+                            pointer.classList.add('hidden');
+                            setTimeout(() => pointer.style.display = 'none', 500);
+                        }}
+                        
+                        // Monitor sidebar state
+                        const checkSidebar = setInterval(() => {{
+                            const sidebar = document.querySelector('[data-testid="stSidebar"]');
+                            if (sidebar) {{
+                                const rect = sidebar.getBoundingClientRect();
+                                if (rect.width > 100) {{ // Sidebar is open
+                                    hidePointer();
+                                    clearInterval(checkSidebar);
+                                }}
+                            }}
+                        }}, 500);
+                        
+                        // Hide on any interaction
+                        ['click', 'scroll', 'keydown', 'touchstart'].forEach(eventType => {{
                             document.addEventListener(eventType, () => {{
-                                pointer.style.opacity = '0';
-                                setTimeout(() => pointer.style.display = 'none', 1000);
+                                hidePointer();
+                                clearInterval(checkSidebar);
                             }}, {{ once: true }});
                         }});
                         
-                        // Auto-hide after 20 seconds
+                        // Auto-hide after 15 seconds
                         setTimeout(() => {{
-                            if (pointer.style.display !== 'none') {{
-                                pointer.style.opacity = '0';
-                                setTimeout(() => pointer.style.display = 'none', 1000);
+                            if (!pointer.classList.contains('hidden')) {{
+                                hidePointer();
+                                clearInterval(checkSidebar);
                             }}
-                        }}, 20000);
+                        }}, 15000);
                     }}
-                }}, 2000);
+                }}, 3000);
             }});
         }} else {{
             applyCSSFixes();
             setTimeout(initializeTheme, 100);
             
-            // Simple pointer management
+            // Fixed pointer management - points to sidebar button
             setTimeout(() => {{
                 const pointer = document.getElementById('schedule-pointer');
-                if (pointer && window.innerWidth > 768) {{
-                    pointer.style.opacity = '0.85';
+                if (pointer && window.innerWidth > 1024) {{
+                    // Show the pointer
+                    pointer.classList.add('show');
                     
-                    // Hide after user interaction
-                    ['click', 'scroll', 'keydown'].forEach(eventType => {{
+                    // Hide when sidebar opens or user interacts
+                    function hidePointer() {{
+                        pointer.classList.add('hidden');
+                        setTimeout(() => pointer.style.display = 'none', 500);
+                    }}
+                    
+                    // Monitor sidebar state
+                    const checkSidebar = setInterval(() => {{
+                        const sidebar = document.querySelector('[data-testid="stSidebar"]');
+                        if (sidebar) {{
+                            const rect = sidebar.getBoundingClientRect();
+                            if (rect.width > 100) {{ // Sidebar is open
+                                hidePointer();
+                                clearInterval(checkSidebar);
+                            }}
+                        }}
+                    }}, 500);
+                    
+                    // Hide on any interaction
+                    ['click', 'scroll', 'keydown', 'touchstart'].forEach(eventType => {{
                         document.addEventListener(eventType, () => {{
-                            pointer.style.opacity = '0';
-                            setTimeout(() => pointer.style.display = 'none', 1000);
+                            hidePointer();
+                            clearInterval(checkSidebar);
                         }}, {{ once: true }});
                     }});
                     
-                    // Auto-hide after 20 seconds
+                    // Auto-hide after 15 seconds
                     setTimeout(() => {{
-                        if (pointer.style.display !== 'none') {{
-                            pointer.style.opacity = '0';
-                            setTimeout(() => pointer.style.display = 'none', 1000);
+                        if (!pointer.classList.contains('hidden')) {{
+                            hidePointer();
+                            clearInterval(checkSidebar);
                         }}
-                    }}, 20000);
+                    }}, 15000);
                 }}
-            }}, 2000);
+            }}, 3000);
         }}
         
         // Reapply styles on any DOM changes
@@ -849,31 +837,35 @@ engine_svg = '''
 
 st.markdown(f'<div class="engine-icon">{engine_svg}</div>', unsafe_allow_html=True)
 
-# 🏹 Schedule Interview Pointer - FIXED VERSION
-schedule_pointer_svg = f'''
+# Schedule Interview Pointer
+st.markdown(f'''
 <div class="schedule-pointer" id="schedule-pointer">
-    <svg width="220" height="80" viewBox="0 0 220 80" xmlns="http://www.w3.org/2000/svg">
-        <!-- Background for readability -->
-        <ellipse class="background-shape" cx="110" cy="40" rx="105" ry="35" />
-        
-        <!-- Main arrow pointing RIGHT towards sidebar -->
-        <path class="arrow-path" d="M 15 40 Q 25 30, 40 35 Q 55 40, 70 35" stroke-width="2.5" />
-        
-        <!-- Arrow tip pointing RIGHT -->
-        <path class="arrow-path" d="M 70 35 L 78 30 M 70 35 L 78 40 M 70 35 L 82 35" stroke-width="2.5" />
-        
-        <!-- Text positioned to the right of arrow -->
-        <text class="text-element" x="135" y="35" text-anchor="middle">Schedule Interview</text>
-        <text class="text-element" x="135" y="50" text-anchor="middle" style="font-size: 12px;">in Configuration →</text>
-        
-        <!-- Decorative underline -->
-        <path class="arrow-path" d="M 90 58 Q 135 60, 180 58" stroke-width="1" opacity="0.6" />
-    </svg>
+    <div style="
+        background: {text}; 
+        color: {bg}; 
+        padding: 8px 16px; 
+        border-radius: 20px; 
+        font-size: 13px; 
+        font-weight: 600;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        position: relative;
+        white-space: nowrap;
+    ">
+        ← Open sidebar to schedule interview
+        <div style="
+            position: absolute;
+            left: -8px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 0;
+            height: 0;
+            border-top: 8px solid transparent;
+            border-bottom: 8px solid transparent;
+            border-right: 8px solid {text};
+        "></div>
+    </div>
 </div>
-'''
-
-# 🔥 ESTA LÍNEA ES CRUCIAL - renderiza el SVG:
-st.markdown(schedule_pointer_svg, unsafe_allow_html=True)
+''', unsafe_allow_html=True)
 
 # Clean sidebar
 with st.sidebar:
