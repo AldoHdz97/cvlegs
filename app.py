@@ -344,73 +344,8 @@ def set_theme():
             border-radius: 0.5rem !important;
         }}
         
-        /* FIX 2: Toggle switch - FORCE VISIBILITY AND PROPER STYLING */
-        .stToggle {{
-            color: {text} !important;
-        }}
-        
-        /* Force toggle switch visibility */
-        .stToggle label {{
-            display: flex !important;
-            align-items: center !important;
-            gap: 10px !important;
-        }}
-        
-        /* Make the actual switch visible with proper colors */
-        .stToggle input[type="checkbox"] {{
-            appearance: none !important;
-            width: 44px !important;
-            height: 24px !important;
-            background-color: #ccc !important;
-            border-radius: 12px !important;
-            position: relative !important;
-            cursor: pointer !important;
-            transition: all 0.3s ease !important;
-            border: 2px solid {border_color} !important;
-        }}
-        
-        /* Switch when checked (dark mode ON) */
-        .stToggle input[type="checkbox"]:checked {{
-            background-color: #4CAF50 !important;
-        }}
-        
-        /* Switch slider/thumb */
-        .stToggle input[type="checkbox"]:before {{
-            content: "" !important;
-            position: absolute !important;
-            width: 18px !important;
-            height: 18px !important;
-            border-radius: 50% !important;
-            background-color: white !important;
-            top: 1px !important;
-            left: 2px !important;
-            transition: all 0.3s ease !important;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.2) !important;
-        }}
-        
-        /* Move slider when checked */
-        .stToggle input[type="checkbox"]:checked:before {{
-            transform: translateX(20px) !important;
-        }}
-        
-        /* Hide any Streamlit default toggle styling that might interfere */
-        .stToggle > div > div > div {{
-            display: none !important;
-        }}
-        
-        /* Alternative: If custom CSS doesn't work, show Streamlit's default but style it */
-        .stToggle [role="switch"] {{
-            display: block !important;
-            visibility: visible !important;
-            opacity: 1 !important;
-            background-color: #ccc !important;
-            border: 2px solid {border_color} !important;
-        }}
-        
-        .stToggle [role="switch"][aria-checked="true"] {{
-            background-color: #4CAF50 !important;
-        }}
-        
+        /* Toggle switch and checkbox */
+        .stToggle,
         .stCheckbox {{
             color: {text} !important;
         }}
@@ -800,13 +735,27 @@ with st.sidebar:
         help="Choose how you'd like responses formatted"
     )
     
-    # Clean theme toggle - REVERTED TO INVESTIGATE ISSUE
-    dark_mode = st.toggle("🌙 Dark Mode", value=st.session_state.dark_mode, key="theme_toggle")
-    if dark_mode != st.session_state.dark_mode:
-        st.session_state.dark_mode = dark_mode
-        st.session_state.manual_theme_override = True
-        st.markdown('<script>localStorage.setItem("manual_theme_override", "true");</script>', unsafe_allow_html=True)
-        st.rerun()
+    # ALTERNATIVE SOLUTION: Custom Toggle Buttons - GUARANTEED VISIBLE
+    st.write("**Theme Mode:**")
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        if st.button("🌙 Dark", key="dark_btn", use_container_width=True, 
+                    type="primary" if st.session_state.dark_mode else "secondary"):
+            if not st.session_state.dark_mode:
+                st.session_state.dark_mode = True
+                st.session_state.manual_theme_override = True
+                st.markdown('<script>localStorage.setItem("manual_theme_override", "true");</script>', unsafe_allow_html=True)
+                st.rerun()
+    
+    with col2:
+        if st.button("☀️ Light", key="light_btn", use_container_width=True,
+                    type="primary" if not st.session_state.dark_mode else "secondary"):
+            if st.session_state.dark_mode:
+                st.session_state.dark_mode = False
+                st.session_state.manual_theme_override = True
+                st.markdown('<script>localStorage.setItem("manual_theme_override", "true");</script>', unsafe_allow_html=True)
+                st.rerun()
 
     st.markdown("---")
     
