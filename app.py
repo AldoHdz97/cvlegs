@@ -344,45 +344,71 @@ def set_theme():
             border-radius: 0.5rem !important;
         }}
         
-        /* FIX 2: Toggle switch - MAKE ONLY SWITCH CLICKABLE */
+        /* FIX 2: Toggle switch - FORCE VISIBILITY AND PROPER STYLING */
         .stToggle {{
             color: {text} !important;
         }}
         
-        /* Disable clicking on the entire toggle container */
+        /* Force toggle switch visibility */
         .stToggle label {{
-            pointer-events: none !important;
-            cursor: default !important;
+            display: flex !important;
+            align-items: center !important;
+            gap: 10px !important;
         }}
         
-        /* Re-enable clicking only on the actual switch element */
-        .stToggle label input[type="checkbox"] {{
-            pointer-events: auto !important;
+        /* Make the actual switch visible with proper colors */
+        .stToggle input[type="checkbox"] {{
+            appearance: none !important;
+            width: 44px !important;
+            height: 24px !important;
+            background-color: #ccc !important;
+            border-radius: 12px !important;
+            position: relative !important;
             cursor: pointer !important;
+            transition: all 0.3s ease !important;
+            border: 2px solid {border_color} !important;
         }}
         
-        /* Re-enable clicking on the switch visual element */
-        .stToggle label > div[data-testid] {{
-            pointer-events: auto !important;
-            cursor: pointer !important;
+        /* Switch when checked (dark mode ON) */
+        .stToggle input[type="checkbox"]:checked {{
+            background-color: #4CAF50 !important;
         }}
         
-        /* Specifically target the switch button/slider */
-        .stToggle label > div > div {{
-            pointer-events: auto !important;
-            cursor: pointer !important;
+        /* Switch slider/thumb */
+        .stToggle input[type="checkbox"]:before {{
+            content: "" !important;
+            position: absolute !important;
+            width: 18px !important;
+            height: 18px !important;
+            border-radius: 50% !important;
+            background-color: white !important;
+            top: 1px !important;
+            left: 2px !important;
+            transition: all 0.3s ease !important;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2) !important;
         }}
         
-        /* Make sure text part is not clickable */
-        .stToggle label > div:first-child {{
-            pointer-events: none !important;
-            cursor: default !important;
+        /* Move slider when checked */
+        .stToggle input[type="checkbox"]:checked:before {{
+            transform: translateX(20px) !important;
         }}
         
-        /* Alternative selector for the switch itself */
+        /* Hide any Streamlit default toggle styling that might interfere */
+        .stToggle > div > div > div {{
+            display: none !important;
+        }}
+        
+        /* Alternative: If custom CSS doesn't work, show Streamlit's default but style it */
         .stToggle [role="switch"] {{
-            pointer-events: auto !important;
-            cursor: pointer !important;
+            display: block !important;
+            visibility: visible !important;
+            opacity: 1 !important;
+            background-color: #ccc !important;
+            border: 2px solid {border_color} !important;
+        }}
+        
+        .stToggle [role="switch"][aria-checked="true"] {{
+            background-color: #4CAF50 !important;
         }}
         
         .stCheckbox {{
