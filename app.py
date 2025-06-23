@@ -839,7 +839,7 @@ def stream_message(msg, delay=0.016):
 
 # Initial greeting
 if not st.session_state.greeting_streamed:
-    greeting = ("Hey there! I'm Aldo, well... this is my AI twin at least. "
+    greeting = ("Hey there! I'm Aldo* or at least his digital Twin ! "
                 "Feel free to ask me anything about my work, skills, or projects. "
                 "I'll try to keep the humble bragging to a minimum (no promises though).")
     
