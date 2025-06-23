@@ -470,20 +470,21 @@ def set_theme():
             font-weight: 500;
         }}
         
-        /* Validation bubble */
+        /* FIX 1: Validation bubble - FIXED CONTRAST */
         .validation-bubble {{
             position: fixed;
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            background: {text};
-            color: {bg};
+            background: #ff4444 !important;
+            color: #ffffff !important;
             padding: 12px 24px;
             border-radius: 25px;
             font-size: 14px;
             font-weight: 500;
             z-index: 1000;
             animation: fadeInOut 3s ease-in-out forwards;
+            border: 2px solid #ffffff;
         }}
         
         @keyframes fadeInOut {{
@@ -734,8 +735,8 @@ with st.sidebar:
         help="Choose how you'd like responses formatted"
     )
     
-    # Clean theme toggle
-    dark_mode = st.toggle("🌙 Dark Mode", value=st.session_state.dark_mode, key="theme_toggle")
+    # FIX 2: Dark mode toggle - REMOVED MOON, PROPER TOGGLE
+    dark_mode = st.toggle("Dark Mode", value=st.session_state.dark_mode, key="theme_toggle")
     if dark_mode != st.session_state.dark_mode:
         st.session_state.dark_mode = dark_mode
         st.session_state.manual_theme_override = True
