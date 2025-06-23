@@ -455,6 +455,82 @@ def set_theme():
         .engine-icon:hover {{
             opacity: 0.6;
         }}
+        /* 🆕 Schedule Interview Pointer - FIXED VERSION */
+        .schedule-pointer {{
+            position: fixed;
+            top: 180px;  /* 🔧 AJUSTADO para alinear con sidebar */
+            left: 60px;  /* 🔧 AJUSTADO para apuntar al sidebar */
+            z-index: 500;
+            pointer-events: none;
+            opacity: 0.85;  /* 🔧 VISIBLE inmediatamente */
+            transition: all 0.3s ease;
+            font-family: 'Georgia', 'Times New Roman', serif;
+        }}
+
+        .schedule-pointer.hidden {{
+            opacity: 0;
+            visibility: hidden;
+            transform: scale(0.9);
+        }}
+
+        .schedule-pointer svg {{
+            filter: drop-shadow(2px 2px 6px rgba(0,0,0,0.15));
+        }}
+
+        /* Theme-aware colors */
+        .schedule-pointer .arrow-path {{
+            stroke: {text};
+            fill: none;
+            stroke-width: 2.5;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+            opacity: 0.9;
+        }}
+
+        .schedule-pointer .text-element {{
+            fill: {text};
+            font-family: 'Georgia', 'Times New Roman', serif;
+            font-size: 14px;  /* 🔧 Tamaño ajustado */
+            font-style: italic;
+            font-weight: 500;
+            opacity: 0.95;
+        }}
+
+        .schedule-pointer .background-shape {{
+            fill: {bg};
+            fill-opacity: 0.92;
+            stroke: {text};
+            stroke-width: 1;
+            stroke-opacity: 0.3;
+        }}
+
+        /* Floating animation */
+        @keyframes schedulePointFloat {{
+            0%, 100% {{ 
+                transform: translateY(0px); 
+            }}
+            50% {{ 
+                transform: translateY(-4px); 
+            }}
+        }}
+
+        .schedule-pointer {{
+            animation: schedulePointFloat 4s ease-in-out infinite;
+        }}
+
+        /* Responsive design */
+        @media (max-width: 1200px) {{
+            .schedule-pointer {{
+                left: 50px;
+                top: 160px;
+            }}
+        }}
+
+        @media (max-width: 768px) {{
+            .schedule-pointer {{
+                display: none !important;
+            }}
+        }}
         
         /* Backend status */
         .backend-status {{
@@ -468,103 +544,6 @@ def set_theme():
             border-radius: 15px;
             font-size: 12px;
             font-weight: 500;
-        }}
-        
-        /* 🆕 Schedule Interview Pointer - Elegant Theme-Aware Element */
-        .schedule-pointer {{
-            position: fixed;
-            top: 45%;
-            left: 35%;
-            transform: translate(-50%, -50%);
-            z-index: 500;
-            pointer-events: none;
-            opacity: 0.75;
-            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-            font-family: 'Georgia', 'Times New Roman', serif;
-        }}
-
-        .schedule-pointer.hidden {{
-            opacity: 0;
-            visibility: hidden;
-            transform: translate(-50%, -50%) scale(0.9);
-        }}
-
-        .schedule-pointer svg {{
-            filter: drop-shadow(1px 2px 4px rgba(0,0,0,0.12));
-        }}
-
-        /* Theme-aware colors - perfectly integrated */
-        .schedule-pointer .arrow-path {{
-            stroke: {text};
-            fill: none;
-            stroke-width: 2.5;
-            stroke-linecap: round;
-            stroke-linejoin: round;
-            opacity: 0.85;
-        }}
-
-        .schedule-pointer .text-element {{
-            fill: {text};
-            font-family: 'Georgia', 'Times New Roman', serif;
-            font-size: 16px;
-            font-style: italic;
-            font-weight: 400;
-            opacity: 0.9;
-        }}
-
-        .schedule-pointer .background-shape {{
-            fill: {bg};
-            fill-opacity: 0.94;
-            stroke: {text};
-            stroke-width: 0.8;
-            stroke-opacity: 0.2;
-        }}
-
-        /* Elegant floating animation */
-        @keyframes schedulePointFloat {{
-            0%, 100% {{ 
-                transform: translate(-50%, -50%) translateY(0px) rotate(0deg); 
-            }}
-            33% {{ 
-                transform: translate(-50%, -50%) translateY(-2px) rotate(0.3deg); 
-            }}
-            66% {{ 
-                transform: translate(-50%, -50%) translateY(1px) rotate(-0.3deg); 
-            }}
-        }}
-
-        .schedule-pointer {{
-            animation: schedulePointFloat 6s ease-in-out infinite;
-        }}
-
-        /* Responsive design */
-        @media (max-width: 1200px) {{
-            .schedule-pointer {{
-                left: 30%;
-                top: 42%;
-            }}
-            .schedule-pointer svg {{
-                width: 240px;
-                height: 100px;
-            }}
-        }}
-
-        @media (max-width: 768px) {{
-            .schedule-pointer {{
-                display: none !important;
-            }}
-        }}
-
-        /* Interactive states */
-        .schedule-pointer.sidebar-open {{
-            opacity: 0.2;
-            transform: translate(-50%, -50%) scale(0.8);
-        }}
-
-        .schedule-pointer.user-interacted {{
-            opacity: 0;
-            transform: translate(-50%, -50%) scale(0.9);
-            transition: all 1.2s ease-out;
         }}
         
         /* FIX 1: Validation bubble - FIXED CONTRAST */
