@@ -839,9 +839,9 @@ def stream_message(msg, delay=0.016):
 
 # Initial greeting
 if not st.session_state.greeting_streamed:
-    greeting = ("Hi there! I'm Aldo—or at least, my digital twin. "
-                "Go ahead and ask me anything about my professional life, projects, or skills. "
-                "I promise not to humblebrag too much (okay, maybe just a little).")
+    greeting = ("Hey there! I'm Aldo, well... this is my AI twin at least. "
+                "Feel free to ask me anything about my work, skills, or projects. "
+                "I'll try to keep the humble bragging to a minimum (no promises though).")
     
     with st.chat_message("assistant"):
         streamed_greeting = stream_message(greeting)
@@ -871,16 +871,30 @@ if prompt := st.chat_input("Ask! Don't be shy !", key="main_chat_input"):
                 loading_placeholder = st.empty()
                 loading_placeholder.markdown('<div class="loading-dots"><span></span><span></span><span></span></div>', unsafe_allow_html=True)
                 
-                if any(word in prompt.lower() for word in ['skill', 'technology', 'programming', 'language']):
-                    answer = "Great question about skills! Based on Aldo's background, he has extensive experience with Python, SQL, Tableau, and data analysis. He's particularly strong in economics, data visualization, and building automated reporting systems. His technical skills span from web scraping to machine learning applications."
-                elif any(word in prompt.lower() for word in ['experience', 'work', 'job', 'company']):
-                    answer = "Aldo has diverse professional experience! He's currently a Social Listening & Insights Analyst at Swarm Data and People, where he analyzes performance for multiple Tec de Monterrey campuses. Previously, he worked as a Data Analyst at Wii México and had his own content creation business. His experience spans data analysis, automation, and stakeholder engagement."
-                elif any(word in prompt.lower() for word in ['education', 'degree', 'university', 'study']):
-                    answer = "Aldo graduated with a B.A. in Economics from Tecnológico de Monterrey (2015-2021). His academic background includes statistical analysis projects using Python and R. He's also earned certifications in Tableau Desktop, Power BI, and OpenAI development."
-                elif any(word in prompt.lower() for word in ['project', 'built', 'created', 'developed']):
-                    answer = "Aldo has worked on fascinating projects! Some highlights include: a Business Growth Analysis dashboard tracking business density across Nuevo León municipalities, an NFL Betting Index aggregation system, and an AI-driven CV Manager using Next.js and OpenAI. His projects showcase skills in data visualization, web development, and AI integration."
+                # More natural, conversational offline responses
+                if any(word in prompt.lower() for word in ['skill', 'technology', 'programming', 'language', 'tech']):
+                    answer = "Oh, my tech stack? I'm pretty deep into Python - it's like my bread and butter. SQL for wrangling databases, Tableau for making data look pretty, and I've been diving into some cool AI stuff lately. I love automating boring tasks and building dashboards that actually make sense to people."
+                
+                elif any(word in prompt.lower() for word in ['experience', 'work', 'job', 'company', 'career']):
+                    answer = "Right now I'm working as a Social Listening Analyst at Swarm Data, analyzing how different Tec de Monterrey campuses are performing online. Before that I did data analysis at Wii México and even tried my hand at content creation for a while. It's been quite the journey, honestly."
+                
+                elif any(word in prompt.lower() for word in ['education', 'degree', 'university', 'study', 'school']):
+                    answer = "I studied Economics at Tecnológico de Monterrey - graduated in 2021. Loved working with Python and R for statistical projects. Also picked up some solid certifications along the way like Tableau Desktop and Power BI. The econ background really helps with data analysis."
+                
+                elif any(word in prompt.lower() for word in ['project', 'built', 'created', 'developed', 'portfolio']):
+                    answer = "I've worked on some pretty cool stuff! Built a business growth dashboard tracking company density across Nuevo León, created an NFL betting index system (don't judge lol), and recently developed this AI-powered CV manager using Next.js. I love projects that solve real problems."
+                
+                elif any(word in prompt.lower() for word in ['day', 'doing', 'how', 'today', 'going']):
+                    answer = "My day's been good, thanks for asking! Been working on some interesting data analysis projects and exploring new ways to visualize insights. Always something new to learn in this field. How's yours going?"
+                
+                elif any(word in prompt.lower() for word in ['location', 'where', 'live', 'from', 'based']):
+                    answer = "I'm based in Monterrey, Mexico. Great city for tech and business - lots of opportunities here, especially with the proximity to the US market. Plus the food is incredible, can't complain about that!"
+                
+                elif any(word in prompt.lower() for word in ['contact', 'email', 'reach', 'connect', 'hire']):
+                    answer = "You can reach me through this platform for now, but if you're interested in connecting professionally, feel free to ask about setting up a proper interview. I'm always open to discussing interesting opportunities or collaborations."
+                
                 else:
-                    answer = f"Thank you for asking about '{prompt}'. I'd be happy to help you learn more about Aldo's professional background! He's an accomplished economist and data analyst with strong technical skills in Python, data visualization, and AI applications. What specific aspect would you like to know more about?"
+                    answer = f"Hmm, that's an interesting question about '{prompt}'. I'm an economist turned data analyst who loves working with Python and building things that make data useful. What would you like to know specifically? My background, projects, skills, or something else?"
                 
                 time.sleep(0.5)
                 loading_placeholder.empty()
