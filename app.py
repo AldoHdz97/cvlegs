@@ -901,48 +901,30 @@ engine_svg = '''
 st.markdown(f'<div class="engine-icon">{engine_svg}</div>', unsafe_allow_html=True)
 
 # Simple Arrow
+# 🔥 SOLUCIÓN SIMPLE - BUSCA esta línea en tu app.py:
+# st.markdown(f'<div class="engine-icon">{engine_svg}</div>', unsafe_allow_html=True)
 
-schedule_pointer_svg = f'''
-<div class="schedule-pointer" id="schedule-pointer" style="opacity: 0;">
-    <svg width="280" height="120" viewBox="0 0 280 120" xmlns="http://www.w3.org/2000/svg">
-        <!-- Background subtle para legibilidad -->
-        <ellipse cx="140" cy="60" rx="130" ry="50" fill="{bg}" fill-opacity="0.9" 
-                 stroke="{text}" stroke-width="0.5" stroke-opacity="0.3"/>
-        
-        <!-- 🏹 FLECHA SIMPLE Y CLARA -->
-        <!-- Línea principal curvada hacia la sidebar -->
-        <path d="M 25 60 Q 35 45, 55 50 Q 70 53, 80 50" 
-              stroke="{text}" stroke-width="2.5" fill="none" 
-              stroke-linecap="round" opacity="0.8"/>
-        
-        <!-- Punta de la flecha -->
-        <path d="M 80 50 L 88 45 M 80 50 L 88 55" 
-              stroke="{text}" stroke-width="2.5" 
-              stroke-linecap="round" opacity="0.8"/>
-        
-        <!-- Texto elegante -->
-        <text x="145" y="52" text-anchor="middle" 
-              fill="{text}" font-family="Georgia, serif" 
-              font-size="16" font-style="italic" opacity="0.9">
-            Schedule Interview
-        </text>
-        
-        <text x="145" y="70" text-anchor="middle" 
-              fill="{text}" font-family="Georgia, serif" 
-              font-size="14" font-style="italic" opacity="0.7">
-            in sidebar →
-        </text>
-        
-        <!-- Línea decorativa sutil -->
-        <path d="M 100 80 Q 145 82, 190 80" 
-              stroke="{text}" stroke-width="1" 
-              opacity="0.4" fill="none"/>
-    </svg>
+# Y AGREGA JUSTO DESPUÉS de esa línea estas 3 líneas:
+
+# Flecha simple que SÍ se ve
+pointer_html = f'''
+<div style="position: fixed; top: 300px; left: 200px; z-index: 1000; 
+            background: {text}; color: {bg}; padding: 8px 15px; 
+            border-radius: 20px; font-size: 14px; font-weight: bold;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            animation: floatPointer 3s ease-in-out infinite;">
+    ← Schedule Interview in Sidebar
 </div>
+
+<style>
+@keyframes floatPointer {{
+    0%, 100% {{ transform: translateY(0px); }}
+    50% {{ transform: translateY(-5px); }}
+}}
+</style>
 '''
 
-# 🔥 ESTA ES LA LÍNEA CRÍTICA QUE FALTABA:
-st.markdown(schedule_pointer_svg, unsafe_allow_html=True)
+st.markdown(pointer_html, unsafe_allow_html=True)
 
 # Clean sidebar
 with st.sidebar:
