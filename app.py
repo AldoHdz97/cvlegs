@@ -470,6 +470,103 @@ def set_theme():
             font-weight: 500;
         }}
         
+        /* 🆕 Schedule Interview Pointer - Elegant Theme-Aware Element */
+        .schedule-pointer {{
+            position: fixed;
+            top: 45%;
+            left: 35%;
+            transform: translate(-50%, -50%);
+            z-index: 500;
+            pointer-events: none;
+            opacity: 0.75;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            font-family: 'Georgia', 'Times New Roman', serif;
+        }}
+
+        .schedule-pointer.hidden {{
+            opacity: 0;
+            visibility: hidden;
+            transform: translate(-50%, -50%) scale(0.9);
+        }}
+
+        .schedule-pointer svg {{
+            filter: drop-shadow(1px 2px 4px rgba(0,0,0,0.12));
+        }}
+
+        /* Theme-aware colors - perfectly integrated */
+        .schedule-pointer .arrow-path {{
+            stroke: {text};
+            fill: none;
+            stroke-width: 2.5;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+            opacity: 0.85;
+        }}
+
+        .schedule-pointer .text-element {{
+            fill: {text};
+            font-family: 'Georgia', 'Times New Roman', serif;
+            font-size: 16px;
+            font-style: italic;
+            font-weight: 400;
+            opacity: 0.9;
+        }}
+
+        .schedule-pointer .background-shape {{
+            fill: {bg};
+            fill-opacity: 0.94;
+            stroke: {text};
+            stroke-width: 0.8;
+            stroke-opacity: 0.2;
+        }}
+
+        /* Elegant floating animation */
+        @keyframes schedulePointFloat {{
+            0%, 100% {{ 
+                transform: translate(-50%, -50%) translateY(0px) rotate(0deg); 
+            }}
+            33% {{ 
+                transform: translate(-50%, -50%) translateY(-2px) rotate(0.3deg); 
+            }}
+            66% {{ 
+                transform: translate(-50%, -50%) translateY(1px) rotate(-0.3deg); 
+            }}
+        }}
+
+        .schedule-pointer {{
+            animation: schedulePointFloat 6s ease-in-out infinite;
+        }}
+
+        /* Responsive design */
+        @media (max-width: 1200px) {{
+            .schedule-pointer {{
+                left: 30%;
+                top: 42%;
+            }}
+            .schedule-pointer svg {{
+                width: 240px;
+                height: 100px;
+            }}
+        }}
+
+        @media (max-width: 768px) {{
+            .schedule-pointer {{
+                display: none !important;
+            }}
+        }}
+
+        /* Interactive states */
+        .schedule-pointer.sidebar-open {{
+            opacity: 0.2;
+            transform: translate(-50%, -50%) scale(0.8);
+        }}
+
+        .schedule-pointer.user-interacted {{
+            opacity: 0;
+            transform: translate(-50%, -50%) scale(0.9);
+            transition: all 1.2s ease-out;
+        }}
+        
         /* FIX 1: Validation bubble - FIXED CONTRAST */
         .validation-bubble {{
             position: fixed;
@@ -629,16 +726,95 @@ def set_theme():
             // Force reflow
             document.body.offsetHeight;
         }}
+
+        // 🆕 Schedule Interview Pointer Management
+        function initSchedulePointer() {{
+            let hasUserInteracted = false;
+            let hideTimeout;
+            let sidebarCheckInterval;
+            
+            function createAndShowPointer() {{
+                // Only show if no prior interaction and not on mobile
+                if (window.innerWidth <= 768) return;
+                
+                const pointer = document.getElementById('schedule-pointer');
+                if (pointer && !hasUserInteracted) {{
+                    // Show pointer after initial page load
+                    setTimeout(() => {{
+                        pointer.style.opacity = '0.75';
+                        startAutoHide();
+                    }}, 3000);
+                }}
+            }}
+            
+            function startAutoHide() {{
+                hideTimeout = setTimeout(() => {{
+                    const pointer = document.getElementById('schedule-pointer');
+                    if (pointer && !hasUserInteracted) {{
+                        pointer.classList.add('hidden');
+                    }}
+                }}, 15000); // Hide after 15 seconds
+            }}
+            
+            function hidePointerOnInteraction() {{
+                if (!hasUserInteracted) {{
+                    hasUserInteracted = true;
+                    const pointer = document.getElementById('schedule-pointer');
+                    if (pointer) {{
+                        pointer.classList.add('user-interacted');
+                    }}
+                    clearTimeout(hideTimeout);
+                    clearInterval(sidebarCheckInterval);
+                }}
+            }}
+            
+            function monitorSidebarState() {{
+                const sidebar = document.querySelector('[data-testid="stSidebar"]');
+                const pointer = document.getElementById('schedule-pointer');
+                
+                if (sidebar && pointer && !hasUserInteracted) {{
+                    const sidebarRect = sidebar.getBoundingClientRect();
+                    const isExpanded = sidebarRect.width > 100;
+                    
+                    if (isExpanded) {{
+                        pointer.classList.add('sidebar-open');
+                    }} else {{
+                        pointer.classList.remove('sidebar-open');
+                    }}
+                }}
+            }}
+            
+            // Setup event listeners
+            ['click', 'scroll', 'keydown', 'touchstart'].forEach(eventType => {{
+                document.addEventListener(eventType, hidePointerOnInteraction, {{ 
+                    once: true, 
+                    passive: true 
+                }});
+            }});
+            
+            // Initialize pointer
+            setTimeout(() => {{
+                createAndShowPointer();
+                
+                // Start monitoring sidebar
+                sidebarCheckInterval = setInterval(monitorSidebarState, 800);
+                
+                // Initial sidebar check
+                setTimeout(monitorSidebarState, 500);
+            }}, 1000);
+        }}
         
         // Initialize everything
         if (document.readyState === 'loading') {{
             document.addEventListener('DOMContentLoaded', function() {{
                 applyCSSFixes();
                 setTimeout(initializeTheme, 100);
+                setTimeout(initSchedulePointer, 500);
             }});
         }} else {{
             applyCSSFixes();
             setTimeout(initializeTheme, 100);
+            setTimeout(initSchedulePointer, 500);
         }}
         
         // Reapply styles on any DOM changes
@@ -723,6 +899,32 @@ engine_svg = '''
 '''
 
 st.markdown(f'<div class="engine-icon">{engine_svg}</div>', unsafe_allow_html=True)
+
+# 🆕 Schedule Interview Pointer - Elegant SVG Element
+schedule_pointer_svg = f'''
+<div class="schedule-pointer" id="schedule-pointer">
+    <svg width="280" height="120" viewBox="0 0 280 120" xmlns="http://www.w3.org/2000/svg">
+        <!-- Background shape for text readability -->
+        <ellipse class="background-shape" cx="140" cy="60" rx="135" ry="55" />
+        
+        <!-- Elegant curved arrow pointing toward sidebar -->
+        <path class="arrow-path" d="M 40 60 Q 20 45, 35 30 Q 55 20, 70 35 Q 80 45, 70 55 L 65 50 M 70 35 L 78 32 M 70 35 L 78 38" />
+        
+        <!-- Stylized text matching your theme -->
+        <text class="text-element" x="145" y="55" text-anchor="middle">Schedule</text>
+        <text class="text-element" x="145" y="75" text-anchor="middle">Interview</text>
+        
+        <!-- Decorative flourish -->
+        <path class="arrow-path" d="M 95 82 Q 145 85, 195 82" stroke-width="1.2" opacity="0.6" />
+        
+        <!-- Small decorative dots -->
+        <circle class="arrow-path" cx="50" cy="45" r="1.5" fill="{text}" opacity="0.4" />
+        <circle class="arrow-path" cx="220" cy="70" r="1" fill="{text}" opacity="0.3" />
+    </svg>
+</div>
+'''
+
+st.markdown(schedule_pointer_svg, unsafe_allow_html=True)
 
 # Clean sidebar
 with st.sidebar:
