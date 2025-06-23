@@ -476,7 +476,7 @@ def set_theme():
             top: 20px;
             left: 80px;
             z-index: 500;
-            pointer-events: none;
+            pointer-events: auto;
             opacity: 0;
             transition: all 0.3s ease;
         }}
@@ -491,12 +491,6 @@ def set_theme():
             transform: scale(0.9);
         }}
 
-        @media (max-width: 1024px) {{
-            .schedule-pointer {{
-                display: none !important;
-            }}
-        }}
-        
         /* Validation bubble */
         .validation-bubble {{
             position: fixed;
@@ -666,9 +660,13 @@ def set_theme():
                 // Fixed pointer management - points to sidebar button
                 setTimeout(() => {{
                     const pointer = document.getElementById('schedule-pointer');
-                    if (pointer && window.innerWidth > 1024) {{
+                    if (pointer) {{
                         // Show the pointer
                         pointer.classList.add('show');
+                        pointer.addEventListener('click', () => {{
+                            const btn = document.querySelector('button[data-testid="collapsedControl"]');
+                            if (btn) btn.click();
+                        }});
                         
                         // Hide when sidebar opens or user interacts
                         function hidePointer() {{
@@ -713,9 +711,13 @@ def set_theme():
             // Fixed pointer management - points to sidebar button
             setTimeout(() => {{
                 const pointer = document.getElementById('schedule-pointer');
-                if (pointer && window.innerWidth > 1024) {{
+                if (pointer) {{
                     // Show the pointer
                     pointer.classList.add('show');
+                    pointer.addEventListener('click', () => {{
+                        const btn = document.querySelector('button[data-testid="collapsedControl"]');
+                        if (btn) btn.click();
+                    }});
                     
                     // Hide when sidebar opens or user interacts
                     function hidePointer() {{
