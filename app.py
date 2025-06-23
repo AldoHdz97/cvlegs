@@ -5,7 +5,7 @@ from datetime import datetime, timedelta
 import hashlib
 import uuid
 
-# Import from our separate API client module - now with multi-user support
+# Import from our separate API client module - now with multi-user support + INTERVIEW SCHEDULING
 from api_client import get_session_cv_client, initialize_session_backend, APIResponse
 
 # Configure logging
@@ -697,6 +697,15 @@ if st.session_state.validation_error:
 if st.session_state.backend_connected is False:
     st.markdown('<div class="backend-status">OFFLINE</div>', unsafe_allow_html=True)
 
+# 🆕 Check if interview scheduling is available
+if st.session_state.backend_connected and cv_client:
+    try:
+        health = cv_client.get_health_status()
+        if health.get("interview_scheduling"):
+            st.markdown('<div class="backend-status" style="background: #4CAF50; right: 120px;">SCHEDULING ONLINE</div>', unsafe_allow_html=True)
+    except:
+        pass
+
 # Clean title
 st.markdown(
     f"<h2 style='font-family:Roboto,sans-serif;font-weight:300;margin-bottom:8px;margin-top:8px;color:{text};text-align:center;'>hola,welcome</h2>",
@@ -810,6 +819,23 @@ with st.sidebar:
             )
             st.session_state.contact_info = contact_info
             
+            # 🆕 Real-time validation feedback
+            if contact_info.strip():
+                cv_client = get_user_cv_client()
+                is_valid, validation_msg = cv_client.validate_interview_data(
+                    st.session_state.selected_day or "temp",
+                    st.session_state.selected_time or "temp", 
+                    contact_info
+                )
+                
+                if not is_valid and "contact" in validation_msg.lower():
+                    st.warning(f"⚠️ {validation_msg}")
+                elif contact_info.strip() and len(contact_info) >= 10:
+                    has_email = "@" in contact_info
+                    has_phone = any(char.isdigit() for char in contact_info)
+                    if has_email or has_phone:
+                        st.success("✅ Contact information looks good!")
+            
             st.info("You'll receive a confirmation once your request is reviewed.")
             
             with st.expander("Review Summary", expanded=True):
@@ -824,24 +850,98 @@ with st.sidebar:
                     st.session_state.scheduling_step = 1
                     st.rerun()
             with col2:
+                # 🔥 NUEVA INTEGRACIÓN CON API CLIENT
                 if st.button("Request Interview", key="submit_int", type="primary", use_container_width=True):
-                    if contact_info.strip():
-                        st.success("Interview request sent! You'll receive a confirmation soon.")
-                        st.session_state.show_calendar_picker = False
-                        st.session_state.scheduling_step = 0
-                        st.session_state.selected_day = None
-                        st.session_state.selected_time = None
-                        st.session_state.contact_info = ""
-                        time.sleep(2)
-                        st.rerun()
+                    # Get the CV client (same pattern as chat)
+                    cv_client = get_user_cv_client()
+                    
+                    # Validate using the client's validation method
+                    is_valid, error_msg = cv_client.validate_interview_data(
+                        st.session_state.selected_day,
+                        st.session_state.selected_time,
+                        contact_info.strip()
+                    )
+                    
+                    if not is_valid:
+                        st.error(f"❌ {error_msg}")
                     else:
-                        st.error("Please provide contact information.")
+                        # Show loading state (same style as chat)
+                        with st.spinner("Scheduling your interview..."):
+                            # Schedule using the extended API client
+                            result = cv_client.schedule_interview(
+                                selected_day=st.session_state.selected_day,
+                                selected_time=st.session_state.selected_time,
+                                contact_info=contact_info.strip()
+                            )
+                            
+                            if result.success:
+                                # Success! 🎉
+                                st.success(f"✅ {result.content}")
+                                
+                                # Show additional info if available
+                                if result.reference_id:
+                                    st.info(f"📋 Reference ID: {result.reference_id}")
+                                
+                                if result.processing_time:
+                                    st.caption(f"⏱️ Processed in {result.processing_time:.2f}s")
+                                
+                                st.balloons()  # 🎈 Celebration!
+                                
+                                # Reset form state
+                                st.session_state.show_calendar_picker = False
+                                st.session_state.scheduling_step = 0
+                                st.session_state.selected_day = None
+                                st.session_state.selected_time = None
+                                st.session_state.contact_info = ""
+                                
+                                # Auto-close after 3 seconds
+                                time.sleep(3)
+                                st.rerun()
+                                
+                            else:
+                                # Error handling (same pattern as chat errors)
+                                st.error(f"❌ {result.error or 'Failed to schedule interview'}")
+                                
+                                # Show specific error suggestions
+                                if "timeout" in (result.error or "").lower():
+                                    st.warning("⏰ Request timed out. Please try again.")
+                                elif "connect" in (result.error or "").lower():
+                                    st.warning("🌐 Connection issue. Check your internet and try again.")
+                                elif "500" in (result.error or ""):
+                                    st.warning("🔧 Server temporarily unavailable. Please try again in a moment.")
+                                else:
+                                    st.warning("🔄 Please try again in a moment.")
+                                
+                                # Show processing time if available (for debugging)
+                                if result.processing_time:
+                                    st.caption(f"⏱️ Failed after {result.processing_time:.2f}s")
+                                
+                                # Keep the form open for retry
+                                logger.error(f"Interview scheduling failed: {result.error}")
 
         st.markdown("---")
         if st.button("Cancel", key="cancel_int", use_container_width=True):
             st.session_state.show_calendar_picker = False
             st.session_state.scheduling_step = 0
             st.rerun()
+
+    st.markdown("---")
+    
+    # 🆕 DEBUG INFO (opcional - solo para testing)
+    with st.expander("🔧 Debug Info", expanded=False):
+        if st.button("Show Debug Info", key="debug_info"):
+            try:
+                from api_client import get_interview_debug_info, get_session_debug_info
+                
+                debug_info = get_session_debug_info()
+                interview_info = get_interview_debug_info()
+                
+                st.json({
+                    "session": debug_info,
+                    "interview": interview_info
+                })
+            except Exception as e:
+                st.error(f"Debug failed: {e}")
 
 def stream_message(msg, delay=0.016):
     output = st.empty()
