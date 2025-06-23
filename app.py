@@ -901,14 +901,30 @@ engine_svg = '''
 st.markdown(f'<div class="engine-icon">{engine_svg}</div>', unsafe_allow_html=True)
 
 # 🆕 Schedule Interview Pointer - Elegant SVG Element
+# ===================================================================
+# 🔧 REEMPLAZAR EN TU APP.PY - Schedule Pointer SVG ARREGLADO
+# ===================================================================
+
+# BUSCAR esta línea en tu app.py:
+# schedule_pointer_svg = f'''
+
+# Y REEMPLAZAR TODO el contenido de schedule_pointer_svg con:
+
 schedule_pointer_svg = f'''
 <div class="schedule-pointer" id="schedule-pointer">
     <svg width="280" height="120" viewBox="0 0 280 120" xmlns="http://www.w3.org/2000/svg">
         <!-- Background shape for text readability -->
         <ellipse class="background-shape" cx="140" cy="60" rx="135" ry="55" />
         
-        <!-- Elegant curved arrow pointing toward sidebar -->
-        <path class="arrow-path" d="M 40 60 Q 20 45, 35 30 Q 55 20, 70 35 Q 80 45, 70 55 L 65 50 M 70 35 L 78 32 M 70 35 L 78 38" />
+        <!-- 🔧 NUEVA FLECHA CLARA Y ELEGANTE -->
+        <!-- Línea principal de la flecha curvada hacia el sidebar -->
+        <path class="arrow-path" d="M 45 60 Q 25 50, 30 35 Q 35 25, 50 30 Q 65 35, 75 45" stroke-width="2.5" fill="none" />
+        
+        <!-- Punta de la flecha - triángulo claro -->
+        <polygon class="arrow-path" points="75,45 85,40 85,50" fill="{text}" stroke="{text}" stroke-width="1" />
+        
+        <!-- Línea de conexión a la punta -->
+        <path class="arrow-path" d="M 75 45 L 82 45" stroke-width="2.5" />
         
         <!-- Stylized text matching your theme -->
         <text class="text-element" x="145" y="55" text-anchor="middle">Schedule</text>
@@ -918,13 +934,67 @@ schedule_pointer_svg = f'''
         <path class="arrow-path" d="M 95 82 Q 145 85, 195 82" stroke-width="1.2" opacity="0.6" />
         
         <!-- Small decorative dots -->
-        <circle class="arrow-path" cx="50" cy="45" r="1.5" fill="{text}" opacity="0.4" />
+        <circle class="arrow-path" cx="55" cy="40" r="1.5" fill="{text}" opacity="0.4" />
         <circle class="arrow-path" cx="220" cy="70" r="1" fill="{text}" opacity="0.3" />
     </svg>
 </div>
 '''
 
-st.markdown(schedule_pointer_svg, unsafe_allow_html=True)
+# ===================================================================
+# 🎯 ALTERNATIVA: FLECHA AÚN MÁS SIMPLE Y CLARA
+# ===================================================================
+
+# Si la anterior sigue sin funcionar bien, usa esta versión SÚPER SIMPLE:
+
+schedule_pointer_svg_simple = f'''
+<div class="schedule-pointer" id="schedule-pointer">
+    <svg width="280" height="120" viewBox="0 0 280 120" xmlns="http://www.w3.org/2000/svg">
+        <!-- Background shape -->
+        <ellipse class="background-shape" cx="140" cy="60" rx="135" ry="55" />
+        
+        <!-- 🏹 FLECHA SÚPER SIMPLE Y CLARA -->
+        <!-- Línea recta con curva sutil -->
+        <path class="arrow-path" d="M 30 60 Q 40 50, 70 55" stroke-width="3" fill="none" stroke-linecap="round" />
+        
+        <!-- Punta de flecha simple -->
+        <path class="arrow-path" d="M 70 55 L 75 50 M 70 55 L 75 60" stroke-width="3" stroke-linecap="round" />
+        
+        <!-- Text -->
+        <text class="text-element" x="145" y="55" text-anchor="middle">Schedule</text>
+        <text class="text-element" x="145" y="75" text-anchor="middle">Interview</text>
+        
+        <!-- Decorative line -->
+        <path class="arrow-path" d="M 95 82 Q 145 85, 195 82" stroke-width="1.2" opacity="0.6" />
+    </svg>
+</div>
+'''
+
+# ===================================================================
+# 🎯 OPCIÓN 3: FLECHA ESTILO DIBUJADA A MANO
+# ===================================================================
+
+schedule_pointer_svg_handdrawn = f'''
+<div class="schedule-pointer" id="schedule-pointer">
+    <svg width="280" height="120" viewBox="0 0 280 120" xmlns="http://www.w.org/2000/svg">
+        <!-- Background -->
+        <ellipse class="background-shape" cx="140" cy="60" rx="135" ry="55" />
+        
+        <!-- ✏️ FLECHA ESTILO HAND-DRAWN -->
+        <!-- Curva principal más natural -->
+        <path class="arrow-path" d="M 20 60 Q 35 45, 50 50 Q 65 55, 75 50" stroke-width="2.5" fill="none" />
+        
+        <!-- Punta de flecha dibujada -->
+        <path class="arrow-path" d="M 75 50 L 80 45 M 75 50 L 80 55 M 75 50 L 85 50" stroke-width="2.5" stroke-linecap="round" />
+        
+        <!-- Text con estilo hand-written -->
+        <text class="text-element" x="145" y="55" text-anchor="middle" style="font-style: italic;">Schedule</text>
+        <text class="text-element" x="145" y="75" text-anchor="middle" style="font-style: italic;">Interview</text>
+        
+        <!-- Underline hand-drawn style -->
+        <path class="arrow-path" d="M 95 82 Q 120 84, 145 83 Q 170 82, 195 84" stroke-width="1.5" opacity="0.7" />
+    </svg>
+</div>
+'''
 
 # Clean sidebar
 with st.sidebar:
