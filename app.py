@@ -455,6 +455,21 @@ def set_theme():
         .engine-icon:hover {{
             opacity: 0.6;
         }}
+        
+        /* Backend status */
+        .backend-status {{
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 999;
+            background: {text};
+            color: {bg};
+            padding: 8px 15px;
+            border-radius: 15px;
+            font-size: 12px;
+            font-weight: 500;
+        }}
+        
         /* 🆕 Schedule Interview Pointer - FIXED VERSION */
         .schedule-pointer {{
             position: fixed;
@@ -530,20 +545,6 @@ def set_theme():
             .schedule-pointer {{
                 display: none !important;
             }}
-        }}
-        
-        /* Backend status */
-        .backend-status {{
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            z-index: 999;
-            background: {text};
-            color: {bg};
-            padding: 8px 15px;
-            border-radius: 15px;
-            font-size: 12px;
-            font-weight: 500;
         }}
         
         /* FIX 1: Validation bubble - FIXED CONTRAST */
@@ -705,95 +706,64 @@ def set_theme():
             // Force reflow
             document.body.offsetHeight;
         }}
-
-        // 🆕 Schedule Interview Pointer Management
-        function initSchedulePointer() {{
-            let hasUserInteracted = false;
-            let hideTimeout;
-            let sidebarCheckInterval;
-            
-            function createAndShowPointer() {{
-                // Only show if no prior interaction and not on mobile
-                if (window.innerWidth <= 768) return;
-                
-                const pointer = document.getElementById('schedule-pointer');
-                if (pointer && !hasUserInteracted) {{
-                    // Show pointer after initial page load
-                    setTimeout(() => {{
-                        pointer.style.opacity = '0.75';
-                        startAutoHide();
-                    }}, 3000);
-                }}
-            }}
-            
-            function startAutoHide() {{
-                hideTimeout = setTimeout(() => {{
-                    const pointer = document.getElementById('schedule-pointer');
-                    if (pointer && !hasUserInteracted) {{
-                        pointer.classList.add('hidden');
-                    }}
-                }}, 15000); // Hide after 15 seconds
-            }}
-            
-            function hidePointerOnInteraction() {{
-                if (!hasUserInteracted) {{
-                    hasUserInteracted = true;
-                    const pointer = document.getElementById('schedule-pointer');
-                    if (pointer) {{
-                        pointer.classList.add('user-interacted');
-                    }}
-                    clearTimeout(hideTimeout);
-                    clearInterval(sidebarCheckInterval);
-                }}
-            }}
-            
-            function monitorSidebarState() {{
-                const sidebar = document.querySelector('[data-testid="stSidebar"]');
-                const pointer = document.getElementById('schedule-pointer');
-                
-                if (sidebar && pointer && !hasUserInteracted) {{
-                    const sidebarRect = sidebar.getBoundingClientRect();
-                    const isExpanded = sidebarRect.width > 100;
-                    
-                    if (isExpanded) {{
-                        pointer.classList.add('sidebar-open');
-                    }} else {{
-                        pointer.classList.remove('sidebar-open');
-                    }}
-                }}
-            }}
-            
-            // Setup event listeners
-            ['click', 'scroll', 'keydown', 'touchstart'].forEach(eventType => {{
-                document.addEventListener(eventType, hidePointerOnInteraction, {{ 
-                    once: true, 
-                    passive: true 
-                }});
-            }});
-            
-            // Initialize pointer
-            setTimeout(() => {{
-                createAndShowPointer();
-                
-                // Start monitoring sidebar
-                sidebarCheckInterval = setInterval(monitorSidebarState, 800);
-                
-                // Initial sidebar check
-                setTimeout(monitorSidebarState, 500);
-            }}, 1000);
-        }}
         
         // Initialize everything
         if (document.readyState === 'loading') {{
             document.addEventListener('DOMContentLoaded', function() {{
                 applyCSSFixes();
                 setTimeout(initializeTheme, 100);
-                setTimeout(initSchedulePointer, 500);
+                
+                // Simple pointer management
+                setTimeout(() => {{
+                    const pointer = document.getElementById('schedule-pointer');
+                    if (pointer && window.innerWidth > 768) {{
+                        pointer.style.opacity = '0.85';
+                        
+                        // Hide after user interaction
+                        ['click', 'scroll', 'keydown'].forEach(eventType => {{
+                            document.addEventListener(eventType, () => {{
+                                pointer.style.opacity = '0';
+                                setTimeout(() => pointer.style.display = 'none', 1000);
+                            }}, {{ once: true }});
+                        }});
+                        
+                        // Auto-hide after 20 seconds
+                        setTimeout(() => {{
+                            if (pointer.style.display !== 'none') {{
+                                pointer.style.opacity = '0';
+                                setTimeout(() => pointer.style.display = 'none', 1000);
+                            }}
+                        }}, 20000);
+                    }}
+                }}, 2000);
             }});
         }} else {{
             applyCSSFixes();
             setTimeout(initializeTheme, 100);
-            setTimeout(initSchedulePointer, 500);
+            
+            // Simple pointer management
+            setTimeout(() => {{
+                const pointer = document.getElementById('schedule-pointer');
+                if (pointer && window.innerWidth > 768) {{
+                    pointer.style.opacity = '0.85';
+                    
+                    // Hide after user interaction
+                    ['click', 'scroll', 'keydown'].forEach(eventType => {{
+                        document.addEventListener(eventType, () => {{
+                            pointer.style.opacity = '0';
+                            setTimeout(() => pointer.style.display = 'none', 1000);
+                        }}, {{ once: true }});
+                    }});
+                    
+                    // Auto-hide after 20 seconds
+                    setTimeout(() => {{
+                        if (pointer.style.display !== 'none') {{
+                            pointer.style.opacity = '0';
+                            setTimeout(() => pointer.style.display = 'none', 1000);
+                        }}
+                    }}, 20000);
+                }}
+            }}, 2000);
         }}
         
         // Reapply styles on any DOM changes
@@ -879,7 +849,7 @@ engine_svg = '''
 
 st.markdown(f'<div class="engine-icon">{engine_svg}</div>', unsafe_allow_html=True)
 
-# Simple Arrow
+# 🏹 Schedule Interview Pointer - FIXED VERSION
 schedule_pointer_svg = f'''
 <div class="schedule-pointer" id="schedule-pointer">
     <svg width="220" height="80" viewBox="0 0 220 80" xmlns="http://www.w3.org/2000/svg">
