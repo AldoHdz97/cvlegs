@@ -880,30 +880,30 @@ engine_svg = '''
 st.markdown(f'<div class="engine-icon">{engine_svg}</div>', unsafe_allow_html=True)
 
 # Simple Arrow
-# 🔥 SOLUCIÓN SIMPLE - BUSCA esta línea en tu app.py:
-# st.markdown(f'<div class="engine-icon">{engine_svg}</div>', unsafe_allow_html=True)
-
-# Y AGREGA JUSTO DESPUÉS de esa línea estas 3 líneas:
-
-# Flecha simple que SÍ se ve
-pointer_html = f'''
-<div style="position: fixed; top: 300px; left: 200px; z-index: 1000; 
-            background: {text}; color: {bg}; padding: 8px 15px; 
-            border-radius: 20px; font-size: 14px; font-weight: bold;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-            animation: floatPointer 3s ease-in-out infinite;">
-    ← Schedule Interview in Sidebar
+schedule_pointer_svg = f'''
+<div class="schedule-pointer" id="schedule-pointer">
+    <svg width="220" height="80" viewBox="0 0 220 80" xmlns="http://www.w3.org/2000/svg">
+        <!-- Background for readability -->
+        <ellipse class="background-shape" cx="110" cy="40" rx="105" ry="35" />
+        
+        <!-- Main arrow pointing RIGHT towards sidebar -->
+        <path class="arrow-path" d="M 15 40 Q 25 30, 40 35 Q 55 40, 70 35" stroke-width="2.5" />
+        
+        <!-- Arrow tip pointing RIGHT -->
+        <path class="arrow-path" d="M 70 35 L 78 30 M 70 35 L 78 40 M 70 35 L 82 35" stroke-width="2.5" />
+        
+        <!-- Text positioned to the right of arrow -->
+        <text class="text-element" x="135" y="35" text-anchor="middle">Schedule Interview</text>
+        <text class="text-element" x="135" y="50" text-anchor="middle" style="font-size: 12px;">in Configuration →</text>
+        
+        <!-- Decorative underline -->
+        <path class="arrow-path" d="M 90 58 Q 135 60, 180 58" stroke-width="1" opacity="0.6" />
+    </svg>
 </div>
-
-<style>
-@keyframes floatPointer {{
-    0%, 100% {{ transform: translateY(0px); }}
-    50% {{ transform: translateY(-5px); }}
-}}
-</style>
 '''
 
-st.markdown(pointer_html, unsafe_allow_html=True)
+# 🔥 ESTA LÍNEA ES CRUCIAL - renderiza el SVG:
+st.markdown(schedule_pointer_svg, unsafe_allow_html=True)
 
 # Clean sidebar
 with st.sidebar:
