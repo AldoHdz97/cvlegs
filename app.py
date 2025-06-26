@@ -486,7 +486,7 @@ def set_theme():
         }}
 
         .schedule-pointer.hidden {{
-            opacity: 0 !important;
+            opacity: 1 !important;
             visibility: hidden;
             transform: scale(0.9);
         }}
